@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================================================ -->
+    <!-- 通用应用 (General Application) -->
+    <!-- ============================================================ -->
+    <string name="app_name">BaobabTD</string>
+    <string name="app_title_login">Baobab TD</string>
+    <string name="cd_logo_baobab">Baobab 图标</string>
+    <string name="or_divider">或</string>
+    <string name="delete">删除</string>
+    <string name="cancel">取消</string>
+    <string name="accept">接受</string>
+    <string name="decline">拒绝</string>
+    <string name="remove">移除</string>
+    <string name="add">添加</string>
+    <string name="send">发送</string>
+    <string name="publish">发布</string>
+    <string name="publish_action">发布</string>
+    <string name="btn_save">保存</string>
+    <string name="welcome_user">欢迎 %s</string>
+    <string name="action_search">搜索</string>
+    <string name="new_conversation">新对话</string>
+    <string name="select_contact">选择联系人</string>
+
+    <!-- ============================================================ -->
+    <!-- 登录 (LoginActivity & layout activity_login.xml) -->
+    <!-- ============================================================ -->
+    <string name="hint_email">电子邮件</string>
+    <string name="hint_email_or_phone">电子邮箱或手机号</string>
+    <string name="toast_phone_verification_required">需要进行手机验证</string>
+    <string name="hint_password">密码</string>
+    <string name="show_password">显示密码</string>
+    <string name="forgot_password">忘记密码？</string>
+    <string name="login_button">登录</string>
+    <string name="create_account_button">创建新账号</string>
+    <string name="login_with_google">使用 Google 登录</string>
+    <string name="login_with_facebook">使用 Facebook 登录</string>
+    <string name="label_select_language">语言 / Language / 语言 :</string>
+    <string name="toast_invalid_credentials">电子邮箱或密码不正确</string>
+    <string name="toast_email_required">需要输入电子邮箱</string>
+    <string name="toast_no_account_email">没有与此邮箱关联的账号</string>
+    <string name="toast_password_reset_success">密码重置成功</string>
+    <string name="toast_password_reset_error">重置密码出错</string>
+    <string name="toast_google_email_error">无法获取 Google 电子邮箱</string>
+    <string name="toast_google_cancel">Google 登录已取消或不可用 (%d)</string>
+    <string name="toast_social_login_error">社交账号登录出错</string>
+
+    <!-- Facebook Config Placeholders -->
+    <string name="facebook_app_id">2312188776302997</string>
+    <string name="facebook_client_token">38d731bf0e763f7ff0223a8fa8c0282e</string>
+    <string name="fb_login_protocol_scheme">fb2312188776302997</string>
+
+    <!-- ============================================================ -->
+    <!-- 注册 (RegisterActivity & layout activity_register.xml) -->
+    <!-- ============================================================ -->
+    <string name="hint_confirm_password">确认密码</string>
+    <string name="terms_privacy_agreement">注册即表示您同意我们的\n隐私政策 📄</string>
+    <string name="already_have_account">已有账号？点击登录</string>
+    <string name="toast_password_too_short">密码长度必须至少为 4 个字符</string>
+    <string name="toast_passwords_dont_match">两次输入的密码不匹配</string>
+
+    <!-- ============================================================ -->
+    <!-- 创建个人资料 (CreateProfileActivity & layout activity_create_profile.xml) -->
+    <!-- ============================================================ -->
+    <string name="create_profile_title">创建我的资料</string>
+    <string name="btn_create_profile">创建个人资料</string>
+    <string name="hint_last_name">姓氏</string>
+    <string name="hint_first_name">名字</string>
+    <string name="hint_dob_gender">出生日期与性别</string>
+    <string name="dob_placeholder">日/月/年</string>
+    <string name="hint_profession">职业</string>
+    <string name="hint_bio">个人简介</string>
+    <string name="hint_relationship_status">感情状态</string>
+    <string name="hint_phone">电话号码</string>
+    <string name="hint_neighborhood">社区/街区</string>
+    <string name="hint_city">城市</string>
+    <string name="hint_country">国家</string>
+    <string name="toast_crop_error">裁剪图片出错</string>
+    <string name="toast_profile_created">个人资料创建成功</string>
+    <string name="toast_profile_create_error">创建个人资料出错</string>
+
+    <!-- ============================================================ -->
+    <!-- 编辑资料 (Mise_a_jour_Activity & layout activity_mise_a_jour.xml) -->
+    <!-- ============================================================ -->
+    <string name="update_profile_title">编辑我的资料</string>
+    <string name="btn_edit_profile">保存修改</string>
+    <string name="toast_profile_updated">资料已更新</string>
+    <string name="toast_profile_update_error">更新资料出错</string>
+
+    <!-- ============================================================ -->
+    <!-- 首页 (AcceuilActivity & layout activity_acceuil.xml) -->
+    <!-- ============================================================ -->
+    <string name="navigation_drawer_open">打开导航菜单</string>
+    <string name="navigation_drawer_close">关闭导航菜单</string>
+    <string name="feed_placeholder">分享你的想法...</string>
+    <string name="label_sensitive_image">⚠️ 将图片标记为敏感内容（需确认后模糊显示）</string>
+    <string name="toast_empty_post">请输入内容或选择图片/视频</string>
+    <string name="toast_post_shared">动态已分享！</string>
+    <string name="toast_story_published">快照已发布！</string>
+    <string name="toast_story_prep_error">准备快照出错</string>
+    <string name="toast_publish_error">发布失败</string>
+    <string name="toast_post_saved_offline">无网络连接。您的动态已保存，将在恢复网络后自动发送！ 📲</string>
+    <string name="toast_offline_posts_synced">离线动态已成功同步！ 🚀</string>
+    <string name="toast_logout_success">已成功退出登录</string>
+
+    <!-- ============================================================ -->
+    <!-- 个人主页 (ProfileActivity & layout activity_profile.xml) -->
+    <!-- ============================================================ -->
+    <string name="mon_profile">我的资料</string>
+    <string name="deconnexion">退出登录</string>
+    <string name="bref_details">个人概况</string>
+    <string name="btn_posts_count">动态</string>
+    <string name="btn_friends_count">好友</string>
+    <string name="btn_blocked_count">黑名单</string>
+    <string name="hint_full_name">全名</string>
+    <string name="hint_dob_and_gender">出生日期和性别</string>
+    <string name="hint_gender_placeholder">性别</string>
+    <string name="hint_bio_or_quote">签名或格言</string>
+
+    <!-- ============================================================ -->
+    <!-- 聊天 (ChatActivity & layout activity_chat.xml) -->
+    <!-- ============================================================ -->
+    <string name="chat_title">聊天</string>
+    <string name="status_online">在线</string>
+    <string name="status_typing">正在输入...</string>
+    <string name="cancel_reply">取消回复</string>
+    <string name="attach_photo">发送图片</string>
+    <string name="attach_video">发送视频</string>
+    <string name="record_audio">录制语音消息</string>
+    <string name="hint_write_message">输入消息...</string>
+    <string name="char_counter">0/500</string>
+    <string name="toast_recording_audio">正在录音... 再次点击发送 🎙️</string>
+    <string name="toast_mic_start_error">启动麦克风失败</string>
+    <string name="toast_audio_sent">语音消息已发送</string>
+    <string name="toast_audio_record_error">录制语音失败</string>
+    <string name="toast_audio_playing">正在播放语音 🔊</string>
+    <string name="toast_audio_play_error">无法播放语音</string>
+    <string name="toast_enter_message">请输入消息</string>
+    <string name="toast_image_prep_error">准备图片出错</string>
+    <string name="toast_image_send_error">发送图片失败</string>
+    <string name="toast_max_photos">仅发送了前 10 张图片</string>
+    <string name="toast_photos_sent">图片发送成功</string>
+    <string name="toast_photos_send_error">发送图片失败</string>
+    <string name="toast_video_save_error">保存视频出错</string>
+    <string name="toast_mic_permission_denied">未获得麦克风权限</string>
+
+    <!-- ============================================================ -->
+    <!-- 评论 (CommenterActivity & layout activity_commenter.xml) -->
+    <!-- ============================================================ -->
+    <string name="title_comments">评论列表</string>
+    <string name="header_comments">评论</string>
+    <string name="toast_post_not_found">未找到该动态</string>
+    <string name="toast_enter_comment">请输入评论内容</string>
+    <string name="toast_comment_added">评论已发表</string>
+    <string name="toast_comment_add_error">发表评论失败</string>
+    <string name="toast_post_reported">已向管理员举报该内容</string>
+    <string name="toast_report_error">举报失败</string>
+
+    <!-- ============================================================ -->
+    <!-- 设置 (ParametreActivity & layout activity_parametre.xml) -->
+    <!-- ============================================================ -->
+    <string name="title_settings">设置</string>
+    <string name="general_preferences">常规偏好设置</string>
+    <string name="language_setting_title">显示语言 🌐</string>
+    <string name="language_setting_desc">选择应用语言 (Français, English, العربية, 中文)</string>
+    <string name="online_presence">在线状态 🟢</string>
+    <string name="online_presence_desc">在线时显示绿色图标</string>
+    <string name="notifications_title">通知提醒 🔔</string>
+    <string name="notifications_desc">接收新消息提醒</string>
+    <string name="dark_mode">夜间模式 🌙</string>
+    <string name="dark_mode_desc">切换至深色主题</string>
+    <string name="enable_ads">开启广告 📢</string>
+    <string name="enable_ads_desc">显示横幅和原生广告</string>
+    <string name="security_account">安全与账号</string>
+    <string name="change_email">修改电子邮箱</string>
+    <string name="change_password">修改密码</string>
+    <string name="privacy_policy">隐私政策 📄</string>
+    <string name="app_update_available">有可用更新 🚀</string>
+    <string name="privacy_settings">隐私设置（隐藏个人信息）</string>
+    <string name="private_profile_mode">私密资料模式 🔒</string>
+    <string name="private_profile_desc">隐藏个人数据（邮箱、生日、位置、电话），显示为 ********</string>
+    <string name="hide_email">隐藏电子邮箱 🔒</string>
+    <string name="hide_dob">隐藏出生日期 🔒</string>
+    <string name="hide_location">隐藏社区、城市和国家 🔒</string>
+    <string name="admin_panel_setting">管理后台 🛠️</string>
+    <string name="delete_account">注销我的账号</string>
+    <string name="toast_privacy_saved">隐私设置已保存</string>
+    <string name="toast_account_deleted">账号已成功注销</string>
+    <string name="toast_account_delete_error">无法注销账号</string>
+    <string name="toast_email_updated">电子邮箱已更新</string>
+    <string name="toast_email_in_use">该电子邮箱已被使用</string>
+    <string name="toast_fields_incomplete">信息填写不完整</string>
+    <string name="toast_current_password_incorrect">当前密码不正确</string>
+    <string name="toast_password_changed">密码修改成功</string>
+
+    <!-- ============================================================ -->
+    <!-- 管理后台 (AdminActivity & layout activity_admin.xml) -->
+    <!-- ============================================================ -->
+    <string name="admin_panel_title">管理后台</string>
+    <string name="tab_reports">举报管理</string>
+    <string name="tab_users">用户管理</string>
+    <string name="switch_show_admin_controls">显示\'降级\'与\'限发\'选项</string>
+    <string name="admin_announcement_hint">输入公告信息或更新内容...</string>
+    <string name="admin_publierUpdate">发布系统更新公告 📢</string>
+    <string name="publish_video_action">发布视频内容 🎥</string>
+    <string name="toast_access_denied">拒绝访问 - 仅限管理员 🚫</string>
+
+    <!-- ============================================================ -->
+    <!-- 好友 (AmiActivity & layout activity_ami.xml) -->
+    <!-- ============================================================ -->
+    <string name="title_my_friends">我的好友</string>
+    <string name="btn_find_new_friends">🔍 寻找新好友</string>
+    <string name="friends_received_requests">收到好友申请</string>
+    <string name="header_friend_suggestions">可能认识的人</string>
+    <string name="my_friends_list">好友列表</string>
+    <string name="search_friends">搜索好友...</string>
+
+    <!-- ============================================================ -->
+    <!-- 群组 (GroupListActivity, CreateGroupActivity, GroupChatActivity, GroupSettingsActivity) -->
+    <!-- ============================================================ -->
+    <string name="title_my_groups">我的群组 👨‍👩‍👧‍👦</string>
+    <string name="info_group_min_friends">ℹ️ 创建群组需要在好友列表中至少有 2 位好友。</string>
+    <string name="empty_groups">暂无群组</string>
+    <string name="title_create_group">创建新群组</string>
+    <string name="hint_group_name_input">群组名称...</string>
+    <string name="label_select_group_members">从好友中选择群成员：</string>
+    <string name="btn_create_group_action">立即创建群组 🚀</string>
+    <string name="title_group_management">群组管理 ⚙️</string>
+    <string name="header_group_info">群组信息</string>
+    <string name="msg_group_locked">🔒 该群组已被管理员锁定，仅管理员可发送消息。</string>
+    <string name="group_chat_default_name">群组名称</string>
+    <string name="group_members_placeholder">成员...</string>
+    <string name="group_settings_desc">群组设置</string>
+    <string name="hint_group_message">发送群消息...</string>
+    <string name="lock_group">锁定群组 🔒</string>
+    <string name="lock_group_desc">仅管理员可发送消息</string>
+    <string name="voice_messages_title">语音消息 🎙️</string>
+    <string name="voice_messages_desc">允许群成员发送语音消息</string>
+    <string name="group_members_title">群小组成员</string>
+    <string name="add_friends_to_group">邀请好友加入群组 👥</string>
+    <string name="clear_group_chat">清空群聊天记录 🗑️</string>
+    <string name="toast_min_friends_group">您需要至少 2 位好友才能创建群组。</string>
+    <string name="toast_select_friend_group">请至少选择 1 位好友</string>
+    <string name="toast_group_created">群组创建成功！ 🚀</string>
+    <string name="toast_group_create_error">创建群组失败</string>
+    <string name="toast_voice_disabled">管理员已禁言语音消息 🔇</string>
+    <string name="error_group_name_required">请输入群组名称</string>
+
+    <!-- ============================================================ -->
+    <!-- 通话 (CallActivity & layout activity_call.xml) -->
+    <!-- ============================================================ -->
+    <string name="label_video_active">实时视频流</string>
+    <string name="label_me">我</string>
+    <string name="label_contact_name">联系人名称</string>
+    <string name="label_ringing">正在响铃...</string>
+    <string name="cd_mute">静音</string>
+    <string name="cd_hangup">挂断</string>
+    <string name="cd_camera">摄像头</string>
+    <string name="toast_call_ended">通话已结束</string>
+    <string name="toast_call_permissions_required">通话需要获得录音和摄像头权限</string>
+
+    <!-- ============================================================ -->
+    <!-- 广告 & 合作伙伴 (PubliciteActivity & layout activity_publicite.xml) -->
+    <!-- ============================================================ -->
+    <string name="title_ads_partners">广告与合作 📢</string>
+    <string name="sponsored_space">赞助专区</string>
+    <string name="sponsored_ad">赞助广告</string>
+    <string name="ad_fullscreen_msg">您可以观看全屏广告。</string>
+    <string name="watch_ad">观看广告</string>
+    <string name="rewarded_video">激励视频</string>
+    <string name="rewarded_video_desc">观看完整视频可获得个人资料徽章。</string>
+    <string name="watch_rewarded_video">观看激励视频 (+1 徽章)</string>
+    <string name="rewards_obtained">已获得奖励: 0 🏆</string>
+    <string name="sponsor_info">欢迎来到广告与合作专区。\n展示广告有助于维持应用免费使用。</string>
+
+    <!-- ============================================================ -->
+    <!-- 通知 (NotificationActivity & layout activity_notification.xml) -->
+    <!-- ============================================================ -->
+    <string name="title_notifications">通知提醒 🔔</string>
+    <string name="cd_no_notifications">暂无通知</string>
+    <string name="no_notifications">暂时没有新通知</string>
+    <string name="toast_notifications_read">所有通知均已标记为已读</string>
+
+    <!-- ============================================================ -->
+    <!-- 适配器与项布局 (Adapters & Item Layouts) -->
+    <!-- ============================================================ -->
+    <string name="btn_like_action">❤️ 点赞</string>
+    <string name="btn_share_action">↗️ 分享</string>
+    <string name="btn_report_action">🚩 举报</string>
+    <string name="label_author">作者</string>
+    <string name="label_just_now">刚刚</string>
+    <string name="label_reply_to_user">回复用户...</string>
+    <string name="friend_name_placeholder">好友姓名</string>
+    <string name="placeholder_user_name">用户名</string>
+    <string name="header_user_posts">动态</string>
+    <string name="hint_write_post_on_profile">在该主页发布动态...</string>
+    <string name="messages_title">消息</string>
+    <string name="no_messages">暂无消息</string>
+    <string name="start_chat">发起对话</string>
+    <string name="audio_play_desc">语音播放</string>
+    <string name="waveform_desc">声波图</string>
+    <string name="audio_duration_default">0:00</string>
+
+    <!-- Form Errors / setError -->
+    <string name="error_name_required">请输入姓氏</string>
+    <string name="error_firstname_required">请输入名字</string>
+    <string name="error_email_required">请输入电子邮箱</string>
+    <string name="error_password_required">请输入密码</string>
+    <string name="error_passwords_dont_match">两次输入的密码不一致</string>
+    <string name="error_email_exists">该电子邮箱已被占用</string>
+    <string name="messages">消息</string>
+    <string name="publier_une_annonce">发布公告</string>
+    <string name="publier_sur_ce_profil">在该主页发布...</string>
+
+    <!-- Dynamic Toasts & Dialogs -->
+    <string name="toast_video_selected">已选择手机本地视频 🎬</string>
+    <string name="toast_report_ignored">已忽略举报</string>
+    <string name="toast_cannot_delete_primary_admin">无法删除第一超级管理员（创始人） 🚫</string>
+    <string name="toast_only_primary_can_delete_super_admin">只有第一超级管理员才能删除其他超级管理员 🚫</string>
+    <string name="toast_cannot_suspend_primary_admin">无法封禁第一超级管理员（创始人） 🚫</string>
+    <string name="toast_user_reactivated">账号已恢复使用</string>
+    <string name="toast_user_suspended">用户已被封禁</string>
+    <string name="toast_cannot_restrict_primary_admin">无法限制第一超级管理员（创始人） 🚫</string>
+    <string name="toast_cannot_demote_primary_admin">无法降级第一超级管理员（创始人） 🚫</string>
+    <string name="toast_only_primary_can_demote_super_admin">只有第一超级管理员才能修改其他超级管理员身份 🚫</string>
+    <string name="toast_no_other_users_available">没有其他可用用户</string>
+    <string name="toast_announcement_updated">公告更新成功！ 🚀</string>
+    <string name="toast_announcement_deleted">公告删除成功！ 🗑️</string>
+    <string name="toast_announcement_published">公告发布成功！ 🚀</string>
+    <string name="toast_update_announcement_published">更新公告发布成功！ 🚀</string>
+    <string name="toast_video_published">视频发布成功！ 🚀</string>
+    <string name="toast_select_video_or_url">请选择视频文件或输入链接</string>
+    <string name="toast_request_accepted">已接受好友申请！</string>
+    <string name="toast_request_declined">已拒绝好友申请</string>
+    <string name="toast_friend_removed">已删除该好友</string>
+    <string name="toast_invitation_sent">好友邀请已发送！</string>
+    <string name="toast_request_canceled">已取消申请</string>
+    <string name="toast_mic_disabled">麦克风已禁用</string>
+    <string name="toast_mic_enabled">麦克风已开启</string>
+    <string name="toast_camera_enabled">摄像头已开启</string>
+    <string name="toast_camera_disabled">摄像头已关闭</string>
+    <string name="toast_message_deleted">消息已删除</string>
+    <string name="toast_message_edited">消息已修改</string>
+    <string name="toast_conversation_deleted">对话已删除</string>
+    <string name="toast_group_history_cleared">群聊天记录已清空</string>
+    <string name="toast_group_name_updated">群组名称已更新</string>
+    <string name="dialog_title_delete_account">注销账号 ⚠️</string>
+    <string name="dialog_title_suspend_user">封禁用户 🚫</string>
+    <string name="dialog_title_nominate_super_admin">👑 管理超级管理员身份</string>
+    <string name="dialog_title_edit_announcement">编辑公告 ✏️</string>
+    <string name="dialog_title_delete_announcement">删除公告 🗑️</string>
+    <string name="dialog_title_publish_video">发布电影 / 剧集 / 视频 🎥</string>
+    <string name="dialog_title_remove_friend">删除好友</string>
+    <string name="dialog_title_attach_file">添加附件 📎</string>
+    <string name="dialog_title_message_options">消息选项</string>
+    <string name="dialog_title_edit_message">编辑消息</string>
+    <string name="dialog_title_delete_conversation">删除对话 🗑️</string>
+    <string name="dialog_title_clear_history">清空记录 🗑️</string>
+    <string name="dialog_msg_delete_conversation">您确定要删除该对话吗？所有消息记录将被彻底清除。</string>
+    <string name="dialog_msg_clear_group_history">您确定要清空该群组的所有消息记录吗？</string>
+    <string name="dialog_msg_delete_announcement">您确定要删除当前生效的公告吗？</string>
+
+    <string-array name="gender_array">
+        <item>男</item>
+        <item>女</item>
+        <item>其他</item>
+    </string-array>
+</resources>
