@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="start"
+    android:orientation="horizontal"
+    android:paddingStart="6dp"
+    android:paddingTop="2dp"
+    android:paddingEnd="60dp"
+    android:paddingBottom="2dp">
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/imgSenderAvatar"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="bottom"
+        android:layout_marginEnd="6dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_profile"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/message_received_background"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <TextView
+            android:id="@+id/txtReplyQuote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:background="#20000000"
+            android:padding="6dp"
+            android:textColor="#555555"
+            android:textSize="13sp"
+            android:textStyle="italic"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/imgMessageImage"
+            android:layout_width="220dp"
+            android:layout_height="180dp"
+            android:layout_marginBottom="6dp"
+            android:adjustViewBounds="true"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
+        <FrameLayout
+            android:id="@+id/layoutVideoContainer"
+            android:layout_width="220dp"
+            android:layout_height="180dp"
+            android:layout_marginBottom="6dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/imgVideoThumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop" />
+
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_gravity="center"
+                android:background="#80000000"
+                android:padding="8dp"
+                android:src="@android:drawable/ic_media_play" />
+
+        </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutAudioContainer"
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:background="#FFFFFF"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <ImageButton
+                android:id="@+id/ibAudioPlay"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/circle_background"
+                android:contentDescription="Lecture audio"
+                android:padding="8dp"
+                android:src="@android:drawable/ic_media_play"
+                app:tint="#2196F3" />
+
+            <ImageView
+                android:layout_width="0dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:contentDescription="Onde sonore"
+                android:scaleType="fitXY"
+                android:src="@drawable/ic_waveform"
+                app:tint="#2196F3" />
+
+            <TextView
+                android:id="@+id/tvAudioDuration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="0:00"
+                android:textColor="#666666"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/txtMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="280dp"
+            android:textColor="#000000"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/txtTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="4dp"
+            android:textColor="#666666"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/txtReactionBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginTop="2dp"
+            android:background="#10000000"
+            android:paddingStart="6dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="2dp"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</LinearLayout>

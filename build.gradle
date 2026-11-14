@@ -1,0 +1,90 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.google.services)
+}
+
+android {
+    namespace 'td.teladoum.baobab'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "td.teladoum.baobab"
+        minSdk 24
+        targetSdk 36
+        versionCode 5
+        versionName "1.0.4"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('baobab-new-key.jks')
+ storePassword 'baobabtchad235td'
+            keyAlias 'baobab-new-key'
+            keyPassword 'baobabtchad235td'
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    implementation libs.activity.ktx
+    implementation libs.lifecycle.viewmodel.ktx
+    implementation libs.lifecycle.livedata.ktx
+    implementation libs.appcompat
+    implementation libs.constraintlayout
+    implementation libs.material
+    testImplementation libs.junit
+    androidTestImplementation libs.espresso.core
+    androidTestImplementation libs.ext.junit
+
+    implementation libs.recyclerview
+    implementation libs.swiperefreshlayout
+    implementation libs.toasty
+
+    // Google Sign-In & Facebook Login
+    implementation libs.play.services.auth
+    implementation libs.facebook.login
+
+    // Image Cropper
+    implementation libs.image.cropper
+
+    // Glide Image Loading & Caching
+    implementation libs.glide
+    annotationProcessor libs.glide.compiler
+
+    // Biometric Security
+    implementation libs.biometric
+
+    // Firebase
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.auth
+    implementation libs.firebase.database
+    implementation libs.firebase.firestore
+    implementation libs.firebase.storage
+    implementation libs.firebase.messaging
+    implementation libs.firebase.analytics
+    implementation libs.firebase.crashlytics
+    implementation libs.recaptcha
+
+    // Google AdMob Ads & UMP Consent SDK
+    implementation libs.play.services.ads
+    implementation libs.user.messaging.platform
+
+    // Room Database
+    implementation libs.room.runtime
+    annotationProcessor libs.room.compiler
+}

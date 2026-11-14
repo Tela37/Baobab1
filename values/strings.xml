@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================================================ -->
+    <!-- General Application -->
+    <!-- ============================================================ -->
+    <string name="app_name">BaobabTD</string>
+    <string name="app_title_login">Baobab TD</string>
+    <string name="cd_logo_baobab">Logo Baobab</string>
+    <string name="or_divider">OU</string>
+    <string name="delete">Supprimer</string>
+    <string name="cancel">Annuler</string>
+    <string name="accept">Accepter</string>
+    <string name="decline">Refuser</string>
+    <string name="remove">Retirer</string>
+    <string name="add">Ajouter</string>
+    <string name="send">Envoyer</string>
+    <string name="publish">Publier</string>
+    <string name="publish_action">Publier</string>
+    <string name="btn_save">Enregistrer</string>
+    <string name="welcome_user">Bienvenue %s</string>
+    <string name="action_search">Rechercher</string>
+    <string name="new_conversation">Nouvelle conversation</string>
+    <string name="select_contact">Sélectionner un contact</string>
+
+    <!-- ============================================================ -->
+    <!-- Class LoginActivity & layout activity_login.xml -->
+    <!-- ============================================================ -->
+    <string name="hint_email">Email</string>
+    <string name="hint_email_or_phone">Email ou Téléphone</string>
+    <string name="toast_phone_verification_required">Vérification du numéro de téléphone requise</string>
+    <string name="hint_password">Mot de passe</string>
+    <string name="show_password">Afficher le mot de passe</string>
+    <string name="forgot_password">Mot de passe oublié ?</string>
+    <string name="login_button">Se connecter</string>
+    <string name="create_account_button">Créer un compte</string>
+    <string name="login_with_google">Se connecter avec Google</string>
+    <string name="login_with_facebook">Se connecter avec Facebook</string>
+    <string name="label_select_language">Langue / Language / اللغة :</string>
+    <string name="toast_invalid_credentials">Email ou mot de passe incorrect</string>
+    <string name="toast_email_required">Email requis</string>
+    <string name="toast_no_account_email">Aucun compte associé à cet email</string>
+    <string name="toast_password_reset_success">Mot de passe réinitialisé avec succès</string>
+    <string name="toast_password_reset_error">Erreur de réinitialisation</string>
+    <string name="toast_google_email_error">Impossible de récupérer l\'email Google</string>
+    <string name="toast_google_cancel">Connexion Google annulée ou indisponible (%d)</string>
+    <string name="toast_social_login_error">Erreur lors de la connexion sociale</string>
+
+    <!-- Facebook Config Placeholders -->
+    <string name="facebook_app_id">2312188776302997</string>
+    <string name="facebook_client_token">38d731bf0e763f7ff0223a8fa8c0282e</string>
+    <string name="fb_login_protocol_scheme">fb2312188776302997</string>
+
+    <!-- ============================================================ -->
+    <!-- Class RegisterActivity & layout activity_register.xml -->
+    <!-- ============================================================ -->
+    <string name="hint_confirm_password">Confirmer le mot de passe</string>
+    <string name="terms_privacy_agreement">En vous inscrivant, vous acceptez notre\nPolitique de confidentialité 📄</string>
+    <string name="already_have_account">J\'ai déjà un compte</string>
+    <string name="toast_password_too_short">Le mot de passe doit faire au moins 4 caractères</string>
+    <string name="toast_passwords_dont_match">Les mots de passe ne correspondent pas</string>
+
+    <!-- ============================================================ -->
+    <!-- Class CreateProfileActivity & layout activity_create_profile.xml -->
+    <!-- ============================================================ -->
+    <string name="create_profile_title">Créer mon Profil</string>
+    <string name="btn_create_profile">Créer mon profil</string>
+    <string name="hint_last_name">Nom</string>
+    <string name="hint_first_name">Prénom</string>
+    <string name="hint_dob_gender">Date de naissance et Sexe</string>
+    <string name="dob_placeholder">jour/mois/année</string>
+    <string name="hint_profession">Profession</string>
+    <string name="hint_bio">Bio</string>
+    <string name="hint_relationship_status">Situation amoureuse</string>
+    <string name="hint_phone">Téléphone</string>
+    <string name="hint_neighborhood">Quartier</string>
+    <string name="hint_city">Ville</string>
+    <string name="hint_country">Pays</string>
+    <string name="toast_crop_error">Erreur lors du recadrage</string>
+    <string name="toast_profile_created">Profil créé avec succès</string>
+    <string name="toast_profile_create_error">Erreur lors de la création du profil</string>
+
+    <!-- ============================================================ -->
+    <!-- Class Mise_a_jour_Activity & layout activity_mise_a_jour.xml -->
+    <!-- ============================================================ -->
+    <string name="update_profile_title">Modifier mon Profil</string>
+    <string name="btn_edit_profile">Modifier le profil</string>
+    <string name="toast_profile_updated">Profil mis à jour</string>
+    <string name="toast_profile_update_error">Erreur lors de la mise à jour</string>
+
+    <!-- ============================================================ -->
+    <!-- Class AcceuilActivity & layout activity_acceuil.xml -->
+    <!-- ============================================================ -->
+    <string name="navigation_drawer_open">Ouvrir le menu navigation</string>
+    <string name="navigation_drawer_close">Fermer le menu navigation</string>
+    <string name="feed_placeholder">À quoi pensez-vous ?</string>
+    <string name="label_sensitive_image">⚠️ Marquer l\'image comme sensible (flouter avec confirmation)</string>
+    <string name="toast_empty_post">Écrivez un texte ou sélectionnez une photo/vidéo</string>
+    <string name="toast_post_shared">Publication partagée !</string>
+    <string name="toast_story_published">Story publiée !</string>
+    <string name="toast_story_prep_error">Erreur lors de la préparation de la story</string>
+    <string name="toast_publish_error">Erreur lors de la publication</string>
+    <string name="toast_post_saved_offline">Aucune connexion. Votre publication a été enregistrée et sera envoyée automatiquement une fois connecté ! 📲</string>
+    <string name="toast_offline_posts_synced">Publications enregistrées hors-ligne envoyées avec succès ! 🚀</string>
+    <string name="toast_logout_success">Déconnexion réussie</string>
+
+    <!-- ============================================================ -->
+    <!-- Class ProfileActivity & layout activity_profile.xml -->
+    <!-- ============================================================ -->
+    <string name="mon_profile">Mon Profil</string>
+    <string name="deconnexion">Déconnexion</string>
+    <string name="bref_details">Brefs détails</string>
+    <string name="btn_posts_count">Post(s)</string>
+    <string name="btn_friends_count">Ami(e)s</string>
+    <string name="btn_blocked_count">Bloqué(s)</string>
+    <string name="hint_full_name">Nom et prénom</string>
+    <string name="hint_dob_and_gender">Date de naissance et genre</string>
+    <string name="hint_gender_placeholder">sexe</string>
+    <string name="hint_bio_or_quote">Bio ou citation</string>
+
+    <!-- ============================================================ -->
+    <!-- Class ChatActivity & layout activity_chat.xml -->
+    <!-- ============================================================ -->
+    <string name="chat_title">Discussion</string>
+    <string name="status_online">En ligne</string>
+    <string name="status_typing">En train d\'écrire...</string>
+    <string name="cancel_reply">Annuler la réponse</string>
+    <string name="attach_photo">Joindre une photo</string>
+    <string name="attach_video">Joindre une vidéo</string>
+    <string name="record_audio">Enregistrer un message vocal</string>
+    <string name="hint_write_message">Message</string>
+    <string name="char_counter">0/500</string>
+    <string name="toast_recording_audio">Enregistrement vocal... Appuyez de nouveau pour envoyer 🎙️</string>
+    <string name="toast_mic_start_error">Erreur démarrage micro</string>
+    <string name="toast_audio_sent">Message vocal envoyé</string>
+    <string name="toast_audio_record_error">Erreur enregistrement audio</string>
+    <string name="toast_audio_playing">Lecture audio 🔊</string>
+    <string name="toast_audio_play_error">Lecture audio impossible</string>
+    <string name="toast_enter_message">Saisissez un message</string>
+    <string name="toast_image_prep_error">Erreur lors de la préparation de l\'image</string>
+    <string name="toast_image_send_error">Erreur lors de l\'envoi de l\'image</string>
+    <string name="toast_max_photos">Seules les 10 premières photos ont été envoyées</string>
+    <string name="toast_photos_sent">Photos envoyées avec succès</string>
+    <string name="toast_photos_send_error">Erreur lors de l\'envoi des photos</string>
+    <string name="toast_video_save_error">Erreur lors de l\'enregistrement de la vidéo</string>
+    <string name="toast_mic_permission_denied">Permission microphone refusée</string>
+
+    <!-- ============================================================ -->
+    <!-- Class CommenterActivity & layout activity_commenter.xml -->
+    <!-- ============================================================ -->
+    <string name="title_comments">Commentaires</string>
+    <string name="header_comments">Commentaires</string>
+    <string name="toast_post_not_found">Publication introuvable</string>
+    <string name="toast_enter_comment">Écrivez un commentaire</string>
+    <string name="toast_comment_added">Commentaire ajouté</string>
+    <string name="toast_comment_add_error">Erreur lors de l\'ajout du commentaire</string>
+    <string name="toast_post_reported">Publication signalée aux modérateurs</string>
+    <string name="toast_report_error">Erreur lors du signalement</string>
+
+    <!-- ============================================================ -->
+    <!-- Class ParametreActivity & layout activity_parametre.xml -->
+    <!-- ============================================================ -->
+    <string name="title_settings">Paramètres</string>
+    <string name="general_preferences">Préférences générales</string>
+    <string name="language_setting_title">Langue d\'affichage 🌐</string>
+    <string name="language_setting_desc">Sélectionnez la langue de l\'application (Français, English, العربية)</string>
+    <string name="online_presence">Présence en ligne 🟢</string>
+    <string name="online_presence_desc">Afficher l\'icône verte lorsque vous êtes actif</string>
+    <string name="notifications_title">Notifications 🔔</string>
+    <string name="notifications_desc">Recevoir les alertes de nouveaux messages</string>
+    <string name="dark_mode">Mode Sombre / Nuit 🌙</string>
+    <string name="dark_mode_desc">Basculer vers le thème sombre applicatif</string>
+    <string name="enable_ads">Activer les publicités 📢</string>
+    <string name="enable_ads_desc">Afficher les annonces bannières et natives</string>
+    <string name="security_account">Sécurité &amp; Compte</string>
+    <string name="change_email">Modifier mon adresse e-mail</string>
+    <string name="change_password">Modifier mon mot de passe</string>
+    <string name="privacy_policy">Politique de confidentialité 📄</string>
+    <string name="app_update_available">Mise à jour disponible 🚀</string>
+    <string name="privacy_settings">Confidentialité (Masquer mes infos)</string>
+    <string name="private_profile_mode">Mode Profil Privé 🔒</string>
+    <string name="private_profile_desc">Masquer mes données personnelles (Email, Date de naissance, Localisation, Tél) par ********</string>
+    <string name="hide_email">Masquer l\'adresse e-mail 🔒</string>
+    <string name="hide_dob">Masquer date de naissance 🔒</string>
+    <string name="hide_location">Masquer quartier, ville et pays 🔒</string>
+    <string name="admin_panel_setting">Panneau d\'Administration 🛠️</string>
+    <string name="delete_account">Supprimer mon compte</string>
+    <string name="toast_privacy_saved">Paramètres de confidentialité enregistrés</string>
+    <string name="toast_account_deleted">Compte supprimé avec succès</string>
+    <string name="toast_account_delete_error">Impossible de supprimer le compte</string>
+    <string name="toast_email_updated">E-mail mis à jour</string>
+    <string name="toast_email_in_use">Cet e-mail est déjà utilisé</string>
+    <string name="toast_fields_incomplete">Champs incomplets</string>
+    <string name="toast_current_password_incorrect">Mot de passe actuel incorrect</string>
+    <string name="toast_password_changed">Mot de passe modifié</string>
+
+    <!-- ============================================================ -->
+    <!-- Class AdminActivity & layout activity_admin.xml -->
+    <!-- ============================================================ -->
+    <string name="admin_panel_title">Panneau d\'Administration</string>
+    <string name="tab_reports">Signalements</string>
+    <string name="tab_users">Utilisateurs</string>
+    <string name="switch_show_admin_controls">Afficher \'Rétrograder\' &amp; \'Limiter Partage\'</string>
+    <string name="admin_announcement_hint">Entrez l\'information générale ou mise à jour...</string>
+    <string name="admin_publierUpdate">Publier une mise à jour </string>
+    <string name="publish_video_action">Publier une vidéo</string>
+    <string name="toast_access_denied">Accès refusé - Réservé aux administrateurs 🚫</string>
+
+    <!-- ============================================================ -->
+    <!-- Class AmiActivity & layout activity_ami.xml -->
+    <!-- ============================================================ -->
+    <string name="title_my_friends">Mes Amis</string>
+    <string name="btn_find_new_friends">🔍 Trouver de nouveaux amis</string>
+    <string name="friends_received_requests">Demandes d\'amis reçues</string>
+    <string name="header_friend_suggestions">Suggestions de nouvelles connaissances</string>
+    <string name="my_friends_list">Liste de mes amis</string>
+    <string name="search_friends">Rechercher dans mes amis...</string>
+
+    <!-- ============================================================ -->
+    <!-- Class Groupes (GroupListActivity, CreateGroupActivity, GroupChatActivity, GroupSettingsActivity) -->
+    <!-- ============================================================ -->
+    <string name="title_my_groups">Mes Groupes 👨‍👩‍👧‍👦</string>
+    <string name="info_group_min_friends">ℹ️ Vous devez posséder au moins 2 amis dans votre liste pour pouvoir créer un groupe.</string>
+    <string name="empty_groups">Aucun groupe pour le moment</string>
+    <string name="title_create_group">Créer un nouveau groupe</string>
+    <string name="hint_group_name_input">Nom du groupe...</string>
+    <string name="label_select_group_members">Sélectionner des membres depuis vos amis :</string>
+    <string name="btn_create_group_action">Créer le groupe 🚀</string>
+    <string name="title_group_management">Gestion du Groupe ⚙️</string>
+    <string name="header_group_info">Informations du Groupe</string>
+    <string name="msg_group_locked">🔒 Ce groupe est verrouillé par l\'administrateur. Seuls les administrateurs peuvent envoyer des messages.</string>
+    <string name="group_chat_default_name">Nom du groupe</string>
+    <string name="group_members_placeholder">Membres...</string>
+    <string name="group_settings_desc">Paramètres du groupe</string>
+    <string name="hint_group_message">Écrire un message de groupe...</string>
+    <string name="lock_group">Verrouiller le groupe 🔒</string>
+    <string name="lock_group_desc">Seuls les administrateurs pourront envoyer des messages</string>
+    <string name="voice_messages_title">Messages vocaux 🎙️</string>
+    <string name="voice_messages_desc">Permettre aux membres d\'envoyer des audios</string>
+    <string name="group_members_title">Membres du Groupe</string>
+    <string name="add_friends_to_group">Ajouter des amis au groupe 👥</string>
+    <string name="clear_group_chat">Effacer l\'historique du groupe 🗑️</string>
+    <string name="toast_min_friends_group">Vous devez posséder au moins 2 amis pour créer un groupe.</string>
+    <string name="toast_select_friend_group">Veuillez sélectionner au moins 1 ami à ajouter au groupe</string>
+    <string name="toast_group_created">Groupe créé avec succès ! 🚀</string>
+    <string name="toast_group_create_error">Erreur lors de la création du groupe</string>
+    <string name="toast_voice_disabled">Les messages vocaux ont été désactivés par l\'administrateur 🔇</string>
+    <string name="error_group_name_required">Le nom du groupe est requis</string>
+
+    <!-- ============================================================ -->
+    <!-- Class CallActivity & layout activity_call.xml -->
+    <!-- ============================================================ -->
+    <string name="label_video_active">Flux Vidéo Actif (Caméra)</string>
+    <string name="label_me">Moi</string>
+    <string name="label_contact_name">Nom du correspondant</string>
+    <string name="label_ringing">Sonnerie...</string>
+    <string name="cd_mute">Muet</string>
+    <string name="cd_hangup">Raccrocher</string>
+    <string name="cd_camera">Caméra</string>
+    <string name="toast_call_ended">Appel terminé</string>
+    <string name="toast_call_permissions_required">Permissions audio/caméra requises pour l\'appel</string>
+
+    <!-- ============================================================ -->
+    <!-- Class PubliciteActivity & layout activity_publicite.xml -->
+    <!-- ============================================================ -->
+    <string name="title_ads_partners">Publicités &amp; Partenaires 📢</string>
+    <string name="sponsored_space">Espace Sponsorisé</string>
+    <string name="sponsored_ad">Annonce sponsorisée</string>
+    <string name="ad_fullscreen_msg">Vous pouvez visionner une annonce plein écran si vous le souhaitez.</string>
+    <string name="watch_ad">Visionner une annonce</string>
+    <string name="rewarded_video">Vidéo Récompensée</string>
+    <string name="rewarded_video_desc">Regardez la vidéo complète pour obtenir votre badge de profil.</string>
+    <string name="watch_rewarded_video">Regarder la vidéo récompensée (+1 Badge)</string>
+    <string name="rewards_obtained">Récompenses obtenues : 0 🏆</string>
+    <string name="sponsor_info">Bienvenue dans l\'espace dédié aux annonces et partenaires.\nLes publicités nous permettent de maintenir l\'application gratuite.</string>
+
+    <!-- ============================================================ -->
+    <!-- Class NotificationActivity & layout activity_notification.xml -->
+    <!-- ============================================================ -->
+    <string name="title_notifications">Notifications 🔔</string>
+    <string name="cd_no_notifications">Aucune notification</string>
+    <string name="no_notifications">Aucune notification pour le moment</string>
+    <string name="toast_notifications_read">Toutes les notifications ont été marquées comme lues</string>
+
+    <!-- ============================================================ -->
+    <!-- Adapters & Item Layouts -->
+    <!-- ============================================================ -->
+    <string name="btn_like_action">❤️ J\'aime</string>
+    <string name="btn_share_action">↗️ Partager</string>
+    <string name="btn_report_action">🚩 Signaler</string>
+    <string name="label_author">Auteur</string>
+    <string name="label_just_now">À l\'instant</string>
+    <string name="label_reply_to_user">En réponse à Utilisateur...</string>
+    <string name="friend_name_placeholder">Nom de l\'ami</string>
+    <string name="placeholder_user_name">Nom de l\'utilisateur</string>
+    <string name="header_user_posts">Publications</string>
+    <string name="hint_write_post_on_profile">Écrire une publication sur ce profil...</string>
+    <string name="messages_title">Messages</string>
+    <string name="no_messages">Aucun message pour le moment</string>
+    <string name="start_chat">Démarrer une discussion</string>
+    <string name="audio_play_desc">Lecture audio</string>
+    <string name="waveform_desc">Onde sonore</string>
+    <string name="audio_duration_default">0:00</string>
+
+    <!-- Form Errors / setError -->
+    <string name="error_name_required">Nom requis</string>
+    <string name="error_firstname_required">Prénom requis</string>
+    <string name="error_email_required">Email requis</string>
+    <string name="error_password_required">Mot de passe requis</string>
+    <string name="error_passwords_dont_match">Les mots de passe ne correspondent pas</string>
+    <string name="error_email_exists">Cet email existe déjà</string>
+    <string name="messages">Messages</string>
+    <string name="publier_une_annonce">Publier une annonce</string>
+    <string name="publier_sur_ce_profil">Publier sur ce profil...</string>
+
+    <!-- Dynamic Toasts & Dialogs -->
+    <string name="toast_video_selected">Vidéo sélectionnée depuis votre téléphone 🎬</string>
+    <string name="toast_report_ignored">Signalement ignoré</string>
+    <string name="toast_cannot_delete_primary_admin">Impossible de supprimer le 1er Super Admin (Fondateur) 🚫</string>
+    <string name="toast_only_primary_can_delete_super_admin">Seul le 1er Super Admin peut supprimer un autre Super Admin 🚫</string>
+    <string name="toast_cannot_suspend_primary_admin">Impossible de suspendre le 1er Super Admin (Fondateur) 🚫</string>
+    <string name="toast_user_reactivated">Compte réactivé</string>
+    <string name="toast_user_suspended">Utilisateur suspendu</string>
+    <string name="toast_cannot_restrict_primary_admin">Impossible de restreindre le 1er Super Admin (Fondateur) 🚫</string>
+    <string name="toast_cannot_demote_primary_admin">Impossible de rétrograder le 1er Super Admin (Fondateur) 🚫</string>
+    <string name="toast_only_primary_can_demote_super_admin">Seul le 1er Super Admin peut modifier le rôle d\'un autre Super Admin 🚫</string>
+    <string name="toast_no_other_users_available">Aucun autre utilisateur disponible</string>
+    <string name="toast_announcement_updated">Annonce mise à jour avec succès ! 🚀</string>
+    <string name="toast_announcement_deleted">Annonce supprimée avec succès ! 🗑️</string>
+    <string name="toast_announcement_published">Annonce publiée avec succès ! 🚀</string>
+    <string name="toast_update_announcement_published">Annonce de mise à jour publiée avec succès ! 🚀</string>
+    <string name="toast_video_published">Vidéo publiée avec succès ! 🚀</string>
+    <string name="toast_select_video_or_url">Veuillez choisir une vidéo ou saisir une URL</string>
+    <string name="toast_request_accepted">Demande acceptée !</string>
+    <string name="toast_request_declined">Demande refusée</string>
+    <string name="toast_friend_removed">Ami retiré</string>
+    <string name="toast_invitation_sent">Invitation envoyée !</string>
+    <string name="toast_request_canceled">Demande annulée</string>
+    <string name="toast_mic_disabled">Microphone désactivé</string>
+    <string name="toast_mic_enabled">Microphone activé</string>
+    <string name="toast_camera_enabled">Caméra activée</string>
+    <string name="toast_camera_disabled">Caméra désactivée</string>
+    <string name="toast_message_deleted">Message supprimé</string>
+    <string name="toast_message_edited">Message modifié</string>
+    <string name="toast_conversation_deleted">Conversation supprimée</string>
+    <string name="toast_group_history_cleared">Historique du groupe effacé</string>
+    <string name="toast_group_name_updated">Nom du groupe mis à jour</string>
+    <string name="dialog_title_delete_account">Supprimer le compte ⚠️</string>
+    <string name="dialog_title_suspend_user">Suspendre l\'utilisateur 🚫</string>
+    <string name="dialog_title_nominate_super_admin">👑 Nommer / Gérer les Super Admins</string>
+    <string name="dialog_title_edit_announcement">Modifier l\'annonce ✏️</string>
+    <string name="dialog_title_delete_announcement">Supprimer l\'annonce 🗑️</string>
+    <string name="dialog_title_publish_video">Publier un Film / Série / Vidéo 🎥</string>
+    <string name="dialog_title_remove_friend">Retirer un ami</string>
+    <string name="dialog_title_attach_file">Joindre un fichier 📎</string>
+    <string name="dialog_title_message_options">Options du message</string>
+    <string name="dialog_title_edit_message">Modifier le message</string>
+    <string name="dialog_title_delete_conversation">Supprimer la conversation 🗑️</string>
+    <string name="dialog_title_clear_history">Effacer l\'historique 🗑️</string>
+    <string name="dialog_msg_delete_conversation">Voulez-vous vraiment supprimer cette conversation ? Tous les messages seront effacés.</string>
+    <string name="dialog_msg_clear_group_history">Voulez-vous vraiment effacer tous les messages de ce groupe ?</string>
+    <string name="dialog_msg_delete_announcement">Voulez-vous vraiment effacer et supprimer l\'annonce actuellement en ligne ?</string>
+
+    <string-array name="gender_array">
+        <item>Masculin</item>
+        <item>Féminin</item>
+        <item>Autre</item>
+    </string-array>
+</resources>

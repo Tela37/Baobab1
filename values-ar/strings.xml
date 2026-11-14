@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================================================ -->
+    <!-- General Application -->
+    <!-- ============================================================ -->
+    <string name="app_name">BaobabTD</string>
+    <string name="app_title_login">Baobab TD</string>
+    <string name="cd_logo_baobab">شعار Baobab</string>
+    <string name="or_divider">أو</string>
+    <string name="delete">حذف</string>
+    <string name="cancel">إلغاء</string>
+    <string name="accept">قبول</string>
+    <string name="decline">رفض</string>
+    <string name="remove">إزالة</string>
+    <string name="add">إضافة</string>
+    <string name="send">إرسال</string>
+    <string name="publish">نشر</string>
+    <string name="publish_action">نشر</string>
+    <string name="btn_save">حفظ</string>
+    <string name="welcome_user">مرحباً %s</string>
+    <string name="action_search">بحث</string>
+    <string name="new_conversation">محادثة جديدة</string>
+    <string name="select_contact">حدد جهة اتصال</string>
+
+    <!-- ============================================================ -->
+    <!-- Class LoginActivity & layout activity_login.xml -->
+    <!-- ============================================================ -->
+    <string name="hint_email">البريد الإلكتروني</string>
+    <string name="hint_email_or_phone">البريد الإلكتروني أو الهاتف</string>
+    <string name="toast_phone_verification_required">التحقق من رقم الهاتف مطلوب</string>
+    <string name="hint_password">كلمة المرور</string>
+    <string name="show_password">إظهار كلمة المرور</string>
+    <string name="forgot_password">هل نسيت كلمة المرور؟</string>
+    <string name="login_button">تسجيل الدخول</string>
+    <string name="create_account_button">إنشاء حساب جديد</string>
+    <string name="login_with_google">تسجيل الدخول باستخدام Google</string>
+    <string name="login_with_facebook">تسجيل الدخول باستخدام Facebook</string>
+    <string name="label_select_language">اللغة / Language / Langue :</string>
+    <string name="toast_invalid_credentials">البريد الإلكتروني أو كلمة المرور غير صحيحة</string>
+    <string name="toast_email_required">البريد الإلكتروني مطلوب</string>
+    <string name="toast_no_account_email">لا يوجد حساب مرتبط بهذا البريد الإلكتروني</string>
+    <string name="toast_password_reset_success">تمت إعادة ضبط كلمة المرور بنجاح</string>
+    <string name="toast_password_reset_error">خطأ في إعادة ضبط كلمة المرور</string>
+    <string name="toast_google_email_error">تعذر استرداد بريد Google الإلكتروني</string>
+    <string name="toast_google_cancel">تم إلغاء تسجيل الدخول بـ Google (%d)</string>
+    <string name="toast_social_login_error">خطأ في تسجيل الدخول الاجتماعي</string>
+
+    <!-- Facebook Config Placeholders -->
+    <string name="facebook_app_id">2312188776302997</string>
+    <string name="facebook_client_token">38d731bf0e763f7ff0223a8fa8c0282e</string>
+    <string name="fb_login_protocol_scheme">fb2312188776302997</string>
+
+    <!-- ============================================================ -->
+    <!-- Class RegisterActivity & layout activity_register.xml -->
+    <!-- ============================================================ -->
+    <string name="hint_confirm_password">تأكيد كلمة المرور</string>
+    <string name="terms_privacy_agreement">بالتسجيل، فإنك توافق على\nسياسة الخصوصية الخاصة بنا </string>
+    <string name="already_have_account">لدي حساب بالفعل</string>
+    <string name="toast_password_too_short">يجب أن تتكون كلمة المرور من 4 أحرف على الأقل</string>
+    <string name="toast_passwords_dont_match">كلمات المرور غير متطابقة</string>
+
+    <!-- ============================================================ -->
+    <!-- Class CreateProfileActivity & layout activity_create_profile.xml -->
+    <!-- ============================================================ -->
+    <string name="create_profile_title">إنشاء ملفي الشخصي</string>
+    <string name="btn_create_profile">إنشاء الملف الشخصي</string>
+    <string name="hint_last_name">اللقب</string>
+    <string name="hint_first_name">الاسم الأول</string>
+    <string name="hint_dob_gender">تاريخ الميلاد والجنس</string>
+    <string name="dob_placeholder">يوم/شهر/سنة</string>
+    <string name="hint_profession">المهنة</string>
+    <string name="hint_bio">السيرة الذاتية</string>
+    <string name="hint_relationship_status">الحالة الاجتماعية</string>
+    <string name="hint_phone">رقم الهاتف</string>
+    <string name="hint_neighborhood">الحي</string>
+    <string name="hint_city">المدينة</string>
+    <string name="hint_country">البلد</string>
+    <string name="toast_crop_error">خطأ أثناء القص</string>
+    <string name="toast_profile_created">تم إنشاء الملف الشخصي بنجاح</string>
+    <string name="toast_profile_create_error">خطأ أثناء إنشاء الملف الشخصي</string>
+
+    <!-- ============================================================ -->
+    <!-- Class Mise_a_jour_Activity & layout activity_mise_a_jour.xml -->
+    <!-- ============================================================ -->
+    <string name="update_profile_title">تعديل ملفي الشخصي</string>
+    <string name="btn_edit_profile">تعديل الملف الشخصي</string>
+    <string name="toast_profile_updated">تم تحديث الملف الشخصي</string>
+    <string name="toast_profile_update_error">خطأ أثناء التحديث</string>
+
+    <!-- ============================================================ -->
+    <!-- Class AcceuilActivity & layout activity_acceuil.xml -->
+    <!-- ============================================================ -->
+    <string name="navigation_drawer_open">فتح قائمة التنقل</string>
+    <string name="navigation_drawer_close">إغلاق قائمة التنقل</string>
+    <string name="feed_placeholder">بماذا تفكر؟</string>
+    <string name="label_sensitive_image">⚠️ تعليم الصورة كحساسة (تغبيش مع التأكيد)</string>
+    <string name="toast_empty_post">اكتب نصاً أو اختر صورة/فيديو</string>
+    <string name="toast_post_shared">تمت مشاركة المنشور!</string>
+    <string name="toast_story_published">تم نشر القصة!</string>
+    <string name="toast_story_prep_error">خطأ في تحضير القصة</string>
+    <string name="toast_publish_error">خطأ أثناء النشر</string>
+    <string name="toast_post_saved_offline">لا يوجد اتصال. تم حفظ منشورك وسيتم إرساله تلقائياً فور الاتصال! </string>
+    <string name="toast_offline_posts_synced">تمت مزامنة المنشورات المحفوظة بنجاح! </string>
+    <string name="toast_logout_success">تم تسجيل الخروج بنجاح</string>
+
+    <!-- ============================================================ -->
+    <!-- Class ProfileActivity & layout activity_profile.xml -->
+    <!-- ============================================================ -->
+    <string name="mon_profile">ملفي الشخصي</string>
+    <string name="deconnexion">تسجيل الخروج</string>
+    <string name="bref_details">تفاصيل مختصرة</string>
+    <string name="btn_posts_count">منشور(ات)</string>
+    <string name="btn_friends_count">صديق/أصدقاء</string>
+    <string name="btn_blocked_count">محظور(ون)</string>
+    <string name="hint_full_name">الاسم الكامل</string>
+    <string name="hint_dob_and_gender">تاريخ الميلاد والجنس</string>
+    <string name="hint_gender_placeholder">الجنس</string>
+    <string name="hint_bio_or_quote">السيرة الذاتية أو الاقتباس</string>
+
+    <!-- ============================================================ -->
+    <!-- Class ChatActivity & layout activity_chat.xml -->
+    <!-- ============================================================ -->
+    <string name="chat_title">المحادثة</string>
+    <string name="status_online">متصل الآن</string>
+    <string name="status_typing">يكتب الآن...</string>
+    <string name="cancel_reply">إلغاء الرد</string>
+    <string name="attach_photo">إرفاق صورة</string>
+    <string name="attach_video">إرفاق فيديو</string>
+    <string name="record_audio">تسجيل رسالة صوتية</string>
+    <string name="hint_write_message">الرسالة</string>
+    <string name="char_counter">0/500</string>
+    <string name="toast_recording_audio">تسجيل صوتي... اضغط مجدداً للإرسال 🎙️</string>
+    <string name="toast_mic_start_error">خطأ تشغيل الميكروفون</string>
+    <string name="toast_audio_sent">تم إرسال الرسالة الصوتية</string>
+    <string name="toast_audio_record_error">خطأ التسجيل الصوتي</string>
+    <string name="toast_audio_playing">تشغيل الصوت </string>
+    <string name="toast_audio_play_error">تعذر تشغيل الصوت</string>
+    <string name="toast_enter_message">أدخل رسالة</string>
+    <string name="toast_image_prep_error">خطأ تحضير الصورة</string>
+    <string name="toast_image_send_error">خطأ إرسال الصورة</string>
+    <string name="toast_max_photos">تم إرسال أول 10 صور فقط</string>
+    <string name="toast_photos_sent">تم إرسال الصور بنجاح</string>
+    <string name="toast_photos_send_error">خطأ في إرسال الصور</string>
+    <string name="toast_video_save_error">خطأ حفظ الفيديو</string>
+    <string name="toast_mic_permission_denied">تم رفض إذن الميكروفون</string>
+
+    <!-- ============================================================ -->
+    <!-- Class CommenterActivity & layout activity_commenter.xml -->
+    <!-- ============================================================ -->
+    <string name="title_comments">التعليقات</string>
+    <string name="header_comments">التعليقات</string>
+    <string name="toast_post_not_found">المنشور غير موجود</string>
+    <string name="toast_enter_comment">اكتب تعليقاً</string>
+    <string name="toast_comment_added">تمت إضافة التعليق</string>
+    <string name="toast_comment_add_error">خطأ إضافة التعليق</string>
+    <string name="toast_post_reported">تم الإبلاغ عن المنشور للمشرفين</string>
+    <string name="toast_report_error">خطأ أثناء الإبلاغ</string>
+
+    <!-- ============================================================ -->
+    <!-- Class ParametreActivity & layout activity_parametre.xml -->
+    <!-- ============================================================ -->
+    <string name="title_settings">الإعدادات</string>
+    <string name="general_preferences">التفضيلات العامة</string>
+    <string name="language_setting_title">لغة العرض </string>
+    <string name="language_setting_desc">اختر لغة التطبيق (Français, English, العربية)</string>
+    <string name="online_presence">التواجد متصل </string>
+    <string name="online_presence_desc">إظهار الأيقونة الخضراء عندما تكون نشطًا</string>
+    <string name="notifications_title">الإشعارات </string>
+    <string name="notifications_desc">تلقي التنبيهات للرسائل الجديدة</string>
+    <string name="dark_mode">الوضع الداكن / الليلي </string>
+    <string name="dark_mode_desc">التبديل إلى المظهر الداكن</string>
+    <string name="enable_ads">تفعيل الإعلانات </string>
+    <string name="enable_ads_desc">عرض الإعلانات البسيطة والمدمجة</string>
+    <string name="security_account">الأمان والحساب</string>
+    <string name="change_email">تغيير عنوان البريد الإلكتروني</string>
+    <string name="change_password">تغيير كلمة المرور</string>
+    <string name="privacy_policy">سياسة الخصوصية </string>
+    <string name="app_update_available">التحديث متوفر </string>
+    <string name="privacy_settings">إعدادات الخصوصية (إخفاء معلوماتي)</string>
+    <string name="private_profile_mode">وضع الملف الشخصي الخاص </string>
+    <string name="private_profile_desc">إخفاء البيانات الشخصية (البريد، الميلاد، الموقع، الهاتف) بـ ********</string>
+    <string name="hide_email">إخفاء عنوان البريد الإلكتروني </string>
+    <string name="hide_dob">إخفاء تاريخ الميلاد </string>
+    <string name="hide_location">إخفاء الحي والمدينة والبلد </string>
+    <string name="admin_panel_setting">لوحة الإدارة 🛠️</string>
+    <string name="delete_account">حذف حسابي</string>
+    <string name="toast_privacy_saved">تم حفظ إعدادات الخصوصية</string>
+    <string name="toast_account_deleted">تم حذف الحساب بنجاح</string>
+    <string name="toast_account_delete_error">تعذر حذف الحساب</string>
+    <string name="toast_email_updated">تم تحديث البريد الإلكتروني</string>
+    <string name="toast_email_in_use">هذا البريد مستخدم بالفعل</string>
+    <string name="toast_fields_incomplete">حقول غير مكتملة</string>
+    <string name="toast_current_password_incorrect">كلمة المرور الحالية غير صحيحة</string>
+    <string name="toast_password_changed">تم تغيير كلمة المرور</string>
+
+    <!-- ============================================================ -->
+    <!-- Class AdminActivity & layout activity_admin.xml -->
+    <!-- ============================================================ -->
+    <string name="admin_panel_title">لوحة الإدارة</string>
+    <string name="tab_reports">البلاغات</string>
+    <string name="tab_users">المستخدمون</string>
+    <string name="switch_show_admin_controls">عرض \'تنزيل الرتبة\' و\'تقييد المشاركة\'</string>
+    <string name="admin_announcement_hint">أدخل المعلومة العامة أو التحديث...</string>
+    <string name="admin_publierUpdate">نشر إعلان </string>
+    <string name="publish_video_action">نشر فيديو </string>
+    <string name="toast_access_denied">تم رفض الوصول - مخصص للمسؤولين فقط </string>
+
+    <!-- ============================================================ -->
+    <!-- Class AmiActivity & layout activity_ami.xml -->
+    <!-- ============================================================ -->
+    <string name="title_my_friends">أصدقائي</string>
+    <string name="btn_find_new_friends"> البحث عن أصدقاء جدد</string>
+    <string name="friends_received_requests">طلبات الصداقة الواردة</string>
+    <string name="header_friend_suggestions">مقترحات معارف جديدة</string>
+    <string name="my_friends_list">قائمة أصدقائي</string>
+    <string name="search_friends">البحث في أصدقائي...</string>
+
+    <!-- ============================================================ -->
+    <!-- Class Groupes (GroupListActivity, CreateGroupActivity, GroupChatActivity, GroupSettingsActivity) -->
+    <!-- ============================================================ -->
+    <string name="title_my_groups">جموعاتي </string>
+    <string name="info_group_min_friends">يجب أن يكون لديك صديقان على الأقل لإنشاء مجموعة.</string>
+    <string name="empty_groups">لا توجد مجموعات حتى الآن</string>
+    <string name="title_create_group">إنشاء مجموعة جديدة</string>
+    <string name="hint_group_name_input">اسم المجموعة...</string>
+    <string name="label_select_group_members">حدد الأعضاء من أصدقائك:</string>
+    <string name="btn_create_group_action">إنشاء المجموعة </string>
+    <string name="title_group_management">إدارة المجموعة ️</string>
+    <string name="header_group_info">معلومات المجموعة</string>
+    <string name="msg_group_locked">🔒 هذه المجموعة مقفلة بواسطة المسؤول. يمكن للمسؤولين فقط إرسال الرسائل.</string>
+    <string name="group_chat_default_name">اسم المجموعة</string>
+    <string name="group_members_placeholder">الأعضاء...</string>
+    <string name="group_settings_desc">إعدادات المجموعة</string>
+    <string name="hint_group_message">اكتب رسالة جماعية...</string>
+    <string name="lock_group">قفل المجموعة </string>
+    <string name="lock_group_desc">يمكن للمسؤولين فقط إرسال الرسائل</string>
+    <string name="voice_messages_title">الرسائل الصوتية 🎙️</string>
+    <string name="voice_messages_desc">السماح للأعضاء بإرسال تسجيلات صوتية</string>
+    <string name="group_members_title">أعضاء المجموعة</string>
+    <string name="add_friends_to_group">إضافة أصدقاء للمجموعة </string>
+    <string name="clear_group_chat">مسح سجل المجموعة ️</string>
+    <string name="toast_min_friends_group">يجب أن يكون لديك صديقان على الأقل لإنشاء مجموعة.</string>
+    <string name="toast_select_friend_group">يرجى تحديد صديق واحد على الأقل</string>
+    <string name="toast_group_created">تم إنشاء المجموعة بنجاح! </string>
+    <string name="toast_group_create_error">خطأ إنشاء المجموعة</string>
+    <string name="toast_voice_disabled">تم تعطيل الرسائل الصوتية بواسطة المسؤول </string>
+    <string name="error_group_name_required">اسم المجموعة مطلوب</string>
+
+    <!-- ============================================================ -->
+    <!-- Class CallActivity & layout activity_call.xml -->
+    <!-- ============================================================ -->
+    <string name="label_video_active">البث المباشر للفيديو (الكاميرا)</string>
+    <string name="label_me">أنا</string>
+    <string name="label_contact_name">اسم المتصل</string>
+    <string name="label_ringing">جاري الاتصال...</string>
+    <string name="cd_mute">كتم</string>
+    <string name="cd_hangup">إنهاء المكالمة</string>
+    <string name="cd_camera">الكاميرا</string>
+    <string name="toast_call_ended">انتهت المكالمة</string>
+    <string name="toast_call_permissions_required">إذونات الصوت/الكاميرا مطلوبة للمكالمة</string>
+
+    <!-- ============================================================ -->
+    <!-- Class PubliciteActivity & layout activity_publicite.xml -->
+    <!-- ============================================================ -->
+    <string name="title_ads_partners">الإعلانات والشركاء </string>
+    <string name="sponsored_space">المساحة الرعائية</string>
+    <string name="sponsored_ad">إعلان برعاية</string>
+    <string name="ad_fullscreen_msg">يمكنك مشاهدة إعلان بملء الشاشة إذا كنت ترغب في ذلك.</string>
+    <string name="watch_ad">مشاهدة الإعلان</string>
+    <string name="rewarded_video">فيديو مكافأة</string>
+    <string name="rewarded_video_desc">شاهد الفيديو بالكامل للحصول على شارة ملفك الشخصي.</string>
+    <string name="watch_rewarded_video">مشاهدة فيديو المكافأة (+1 شارة)</string>
+    <string name="rewards_obtained">المكافآت المحصلة: 0 🏆</string>
+    <string name="sponsor_info">مرحبًا بكم في مساحة الإعلانات والشركاء.\nتساعدنا الإعلانات في إبقاء التطبيق مجانيًا.</string>
+
+    <!-- ============================================================ -->
+    <!-- Class NotificationActivity & layout activity_notification.xml -->
+    <!-- ============================================================ -->
+    <string name="title_notifications">الإشعارات </string>
+    <string name="cd_no_notifications">لا توجد إشعارات</string>
+    <string name="no_notifications">لا توجد إشعارات حالياً</string>
+    <string name="toast_notifications_read">تمت علامة جميع الإشعارات كمقروءة</string>
+
+    <!-- ============================================================ -->
+    <!-- Adapters & Item Layouts -->
+    <!-- ============================================================ -->
+    <string name="btn_like_action">️ أعجبني</string>
+    <string name="btn_share_action">️ مشاركة</string>
+    <string name="btn_report_action"> إبلاغ</string>
+    <string name="label_author">الكاتب</string>
+    <string name="label_just_now">الآن</string>
+    <string name="label_reply_to_user">رداً على المستخدم...</string>
+    <string name="friend_name_placeholder">اسم الصديق</string>
+    <string name="placeholder_user_name">اسم المستخدم</string>
+    <string name="header_user_posts">المنشورات</string>
+    <string name="hint_write_post_on_profile">اكتب منشوراً في هذا الملف الشخصي...</string>
+    <string name="messages_title">الرسائل</string>
+    <string name="no_messages">لا توجد رسائل حتى الآن</string>
+    <string name="start_chat">بدء محادثة</string>
+    <string name="audio_play_desc">تشغيل الصوت</string>
+    <string name="waveform_desc">موجة الصوت</string>
+    <string name="audio_duration_default">0:00</string>
+
+    <!-- Form Errors / setError -->
+    <string name="error_name_required">الاسم مطلوب</string>
+    <string name="error_firstname_required">الاسم الأول مطلوب</string>
+    <string name="error_email_required">البريد الإلكتروني مطلوب</string>
+    <string name="error_password_required">كلمة المرور مطلوبة</string>
+    <string name="error_passwords_dont_match">كلمات المرور غير متطابقة</string>
+    <string name="error_email_exists">هذا البريد الإلكتروني مستخدم بالفعل</string>
+    <string name="messages">الرسائل</string>
+    <string name="publier_une_annonce">نشر إعلان</string>
+    <string name="publier_sur_ce_profil">نشر في هذا الملف الشخصي...</string>
+
+    <!-- Dynamic Toasts & Dialogs -->
+    <string name="toast_video_selected">تم تحديد الفيديو من هاتفك </string>
+    <string name="toast_report_ignored">تم تجاهل البلاغ</string>
+    <string name="toast_cannot_delete_primary_admin">تعذر حذف المسؤول الأول الفائق (المؤسس) </string>
+    <string name="toast_only_primary_can_delete_super_admin">يمكن للمسؤول الأول الفائق فقط حذف مسؤول فائق آخر </string>
+    <string name="toast_cannot_suspend_primary_admin">تعذر تعليق المسؤول الأول الفائق (المؤسس) </string>
+    <string name="toast_user_reactivated">تم إعادة تفعيل الحساب</string>
+    <string name="toast_user_suspended">تم تعليق المستخدم</string>
+    <string name="toast_cannot_restrict_primary_admin">تعذر تقييد المسؤول الأول الفائق (المؤسس) </string>
+    <string name="toast_cannot_demote_primary_admin">تعذر تنزيل رتبة المسؤول الأول الفائق (المؤسس) </string>
+    <string name="toast_only_primary_can_demote_super_admin">يمكن للمسؤول الأول الفائق فقط تعديل دور مسؤول فائق آخر </string>
+    <string name="toast_no_other_users_available">لا يوجد مستخدمون آخرون متوفرون</string>
+    <string name="toast_announcement_updated">تم تحديث الإعلان بنجاح! </string>
+    <string name="toast_announcement_deleted">تم حذف الإعلان بنجاح! ️</string>
+    <string name="toast_announcement_published">تم نشر الإعلان بنجاح! </string>
+    <string name="toast_update_announcement_published">تم نشر إعلان التحديث بنجاح! </string>
+    <string name="toast_video_published">تم نشر الفيديو بنجاح! </string>
+    <string name="toast_select_video_or_url">يرجى اختيار فيديو أو إدخال رابط</string>
+    <string name="toast_request_accepted">تم قبول الطلب!</string>
+    <string name="toast_request_declined">تم رفض الطلب</string>
+    <string name="toast_friend_removed">تمت إزالة الصديق</string>
+    <string name="toast_invitation_sent">تم إرسال الدعوة!</string>
+    <string name="toast_request_canceled">تم إلغاء الطلب</string>
+    <string name="toast_mic_disabled">تم تعطيل الميكروفون</string>
+    <string name="toast_mic_enabled">تم تفعيل الميكروفون</string>
+    <string name="toast_camera_enabled">تم تفعيل الكاميرا</string>
+    <string name="toast_camera_disabled">تم تعطيل الكاميرا</string>
+    <string name="toast_message_deleted">تم حذف الرسالة</string>
+    <string name="toast_message_edited">تم تعديل الرسالة</string>
+    <string name="toast_conversation_deleted">تم حذف المحادثة</string>
+    <string name="toast_group_history_cleared">تم مسح سجل المجموعة</string>
+    <string name="toast_group_name_updated">تم تحديث اسم المجموعة</string>
+    <string name="dialog_title_delete_account">حذف الحساب ️</string>
+    <string name="dialog_title_suspend_user">تعليق المستخدم </string>
+    <string name="dialog_title_nominate_super_admin">👑 تعيين / إدارة المسؤولين الفائقين</string>
+    <string name="dialog_title_edit_announcement">تعديل الإعلان </string>
+    <string name="dialog_title_delete_announcement">حذف الإعلان ️</string>
+    <string name="dialog_title_publish_video">نشر فيلم / مسلسل / فيديو </string>
+    <string name="dialog_title_remove_friend">إزالة صديق</string>
+    <string name="dialog_title_attach_file">إرفاق ملف </string>
+    <string name="dialog_title_message_options">خيارات الرسالة</string>
+    <string name="dialog_title_edit_message">تعديل الرسالة</string>
+    <string name="dialog_title_delete_conversation">حذف المحادثة ️</string>
+    <string name="dialog_title_clear_history">مسح السجل ️</string>
+    <string name="dialog_msg_delete_conversation">هل أنت تأكد من إرادتك لحذف هذه المحادثة؟ سيتم إزالة جميع الرسائل.</string>
+    <string name="dialog_msg_clear_group_history">هل أنت تأكد من مسح جميع رسائل هذه المجموعة؟</string>
+    <string name="dialog_msg_delete_announcement">هل أنت تأكد من مسح وحذف الإعلان المنشور حالياً؟</string>
+
+    <string-array name="gender_array">
+        <item>ذكر</item>
+        <item>أنثى</item>
+        <item>آخر</item>
+    </string-array>
+</resources>
