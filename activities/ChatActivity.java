@@ -50,6 +50,7 @@ import td.teladoum.baobab.R;
 import td.teladoum.baobab.adapters.ChatAdapter;
 import td.teladoum.baobab.firebase.FirebaseHelper;
 import td.teladoum.baobab.helpers.AdMobManager;
+import td.teladoum.baobab.helpers.GeminiHelper;
 import td.teladoum.baobab.models.Message;
 import td.teladoum.baobab.models.User;
 import td.teladoum.baobab.repositories.ConversationRepository;
@@ -719,6 +720,7 @@ public class ChatActivity extends AppCompatActivity {
         optionsList.add("😂 Réaction Rire");
         optionsList.add("👍 Réaction Pouce");
         optionsList.add("↩ Répondre au message (Citer)");
+        optionsList.add("🌐 Traduire le message (IA Gemini)");
 
         if (message.getSenderId() == sessionManager.getUserId()) {
             if (TimeUtils.isWithinHours(message.getCreatedAt(), 1)) {
@@ -744,12 +746,14 @@ public class ChatActivity extends AppCompatActivity {
                     } else if (which == 3) {
                         setupQuoteReply(message);
                     } else if (which == 4) {
+                        GeminiHelper.showTranslateDialog(this, message.getMessage());
+                    } else if (which == 5) {
                         if (message.getSenderId() == sessionManager.getUserId()) {
                             showEditMessageDialog(message);
                         } else {
                             deleteMessageAction(message);
                         }
-                    } else if (which == 5) {
+                    } else if (which == 6) {
                         deleteMessageAction(message);
                     }
                 })
@@ -982,6 +986,7 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(0, 3004, 0, "✨ Résumé IA (150 msgs)");
         menu.add(0, 3002, 0, "📞 Appel vocal");
         menu.add(0, 3003, 0, "📹 Appel vidéo");
         menu.add(0, 3001, 0, "🗑️ Supprimer la conversation");
@@ -992,6 +997,9 @@ public class ChatActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
             finish();
+            return true;
+        } else if (item.getItemId() == 3004) {
+            summarizeChatWithAi();
             return true;
         } else if (item.getItemId() == 3002) {
             Intent callIntent = new Intent(ChatActivity.this, CallActivity.class);
@@ -1023,6 +1031,39 @@ public class ChatActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void summarizeChatWithAi() {
+        List<Message> msgs = messageRepository.getMessages(conversationId);
+        if (msgs == null || msgs.isEmpty()) {
+            Toasty.info(this, "Aucun message à résumer dans cette discussion", Toasty.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> formattedMsgs = new ArrayList<>();
+        for (Message m : msgs) {
+            if (m.getMessage() != null && !m.getMessage().trim().isEmpty()) {
+                String sender = (m.getSenderId() == sessionManager.getUserId()) ? "Moi" : (receiverName != null ? receiverName : "Correspondant");
+                formattedMsgs.add(sender + ": " + m.getMessage());
+            }
+        }
+
+        Toasty.info(this, "Génération du résumé IA Gemini...", Toasty.LENGTH_SHORT).show();
+        GeminiHelper.summarizeChatMessages(formattedMsgs, new GeminiHelper.AiCallback() {
+            @Override
+            public void onSuccess(String result) {
+                new AlertDialog.Builder(ChatActivity.this)
+                        .setTitle("✨ Résumé IA Gemini")
+                        .setMessage(result)
+                        .setPositiveButton("OK", null)
+                        .show();
+            }
+
+            @Override
+            public void onError(String error) {
+                Toasty.error(ChatActivity.this, "Erreur IA : " + error, Toasty.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

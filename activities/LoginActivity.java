@@ -97,9 +97,10 @@ public class LoginActivity extends AppCompatActivity {
         TextView btnLangFrench = findViewById(R.id.btnLangFrench);
         TextView btnLangEnglish = findViewById(R.id.btnLangEnglish);
         TextView btnLangArabic = findViewById(R.id.btnLangArabic);
+        TextView btnLangChinese = findViewById(R.id.btnLangChinese);
 
         String currentLang = LocaleHelper.getPersistedLanguage(this, "fr");
-        highlightLanguageButton(currentLang, btnLangFrench, btnLangEnglish, btnLangArabic);
+        highlightLanguageButton(currentLang, btnLangFrench, btnLangEnglish, btnLangArabic, btnLangChinese);
 
         if (btnLangFrench != null) {
             btnLangFrench.setOnClickListener(v -> changeLanguage("fr"));
@@ -109,6 +110,9 @@ public class LoginActivity extends AppCompatActivity {
         }
         if (btnLangArabic != null) {
             btnLangArabic.setOnClickListener(v -> changeLanguage("ar"));
+        }
+        if (btnLangChinese != null) {
+            btnLangChinese.setOnClickListener(v -> changeLanguage("zh"));
         }
 
         etEmail = findViewById(R.id.etEmail);
@@ -515,10 +519,11 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    private void highlightLanguageButton(String langCode, TextView btnFr, TextView btnEn, TextView btnAr) {
+    private void highlightLanguageButton(String langCode, TextView btnFr, TextView btnEn, TextView btnAr, TextView btnZh) {
         if (btnFr != null) btnFr.setAlpha("fr".equalsIgnoreCase(langCode) ? 1.0f : 0.4f);
         if (btnEn != null) btnEn.setAlpha("en".equalsIgnoreCase(langCode) ? 1.0f : 0.4f);
         if (btnAr != null) btnAr.setAlpha("ar".equalsIgnoreCase(langCode) ? 1.0f : 0.4f);
+        if (btnZh != null) btnZh.setAlpha("zh".equalsIgnoreCase(langCode) ? 1.0f : 0.4f);
     }
 
     @Override

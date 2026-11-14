@@ -37,6 +37,7 @@ import java.util.List;
 
 import es.dmoral.toasty.Toasty;
 import td.teladoum.baobab.R;
+import td.teladoum.baobab.helpers.GeminiHelper;
 import td.teladoum.baobab.models.Group;
 import td.teladoum.baobab.models.GroupMessage;
 import td.teladoum.baobab.repositories.GroupRepository;
@@ -526,6 +527,7 @@ public class GroupChatActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(0, 4003, 0, "✨ Résumé IA du groupe (150 msgs)");
         menu.add(0, 4001, 0, "📞 Appel vocal de groupe");
         menu.add(0, 4002, 0, "📹 Appel vidéo de groupe");
         return true;
@@ -535,6 +537,9 @@ public class GroupChatActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
             finish();
+            return true;
+        } else if (item.getItemId() == 4003) {
+            summarizeGroupWithAi();
             return true;
         } else if (item.getItemId() == 4001) {
             String groupName = currentGroup != null ? currentGroup.getName() : "Groupe";
@@ -552,6 +557,38 @@ public class GroupChatActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void summarizeGroupWithAi() {
+        if (messageList == null || messageList.isEmpty()) {
+            Toasty.info(this, "Aucun message à résumer dans ce groupe", Toasty.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> formattedMsgs = new ArrayList<>();
+        for (td.teladoum.baobab.models.GroupMessage m : messageList) {
+            if (m.getMessage() != null && !m.getMessage().trim().isEmpty()) {
+                String sender = m.getSenderName() != null ? m.getSenderName() : "Membre";
+                formattedMsgs.add(sender + ": " + m.getMessage());
+            }
+        }
+
+        Toasty.info(this, "Génération du résumé du groupe par l'IA Gemini...", Toasty.LENGTH_SHORT).show();
+        GeminiHelper.summarizeChatMessages(formattedMsgs, new GeminiHelper.AiCallback() {
+            @Override
+            public void onSuccess(String result) {
+                new androidx.appcompat.app.AlertDialog.Builder(GroupChatActivity.this)
+                        .setTitle("✨ Résumé IA Groupe Gemini")
+                        .setMessage(result)
+                        .setPositiveButton("OK", null)
+                        .show();
+            }
+
+            @Override
+            public void onError(String error) {
+                Toasty.error(GroupChatActivity.this, "Erreur IA : " + error, Toasty.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

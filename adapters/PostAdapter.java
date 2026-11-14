@@ -23,6 +23,7 @@ import td.teladoum.baobab.R;
 import td.teladoum.baobab.activities.AcceuilActivity;
 import td.teladoum.baobab.activities.CommenterActivity;
 import td.teladoum.baobab.activities.PageUtilisateurActivity;
+import td.teladoum.baobab.helpers.GeminiHelper;
 import td.teladoum.baobab.models.Post;
 import td.teladoum.baobab.models.User;
 import td.teladoum.baobab.repositories.PostRepository;
@@ -320,6 +321,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         }
 
         options.add(post.isSavedByCurrentUser() ? "🔖 Retirer des enregistrés" : "🔖 Enregistrer la publication");
+        options.add("🌐 Traduire la publication (IA Gemini)");
         options.add("❌ Annuler");
 
         String[] items = options.toArray(new String[0]);
@@ -344,6 +346,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                     } else if (selected.contains("Enregistrer")) {
                         boolean saved = repo.toggleSavePost(post.getId(), currentUserId);
                         es.dmoral.toasty.Toasty.info(context, saved ? "Publication enregistrée 🔖" : "Retirée des enregistrés", es.dmoral.toasty.Toasty.LENGTH_SHORT).show();
+                    } else if (selected.contains("Traduire")) {
+                        GeminiHelper.showTranslateDialog(context, post.getContent());
                     }
                 })
                 .show();

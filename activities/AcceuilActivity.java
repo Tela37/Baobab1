@@ -715,6 +715,12 @@ public class AcceuilActivity extends AppCompatActivity {
             } else if (id == R.id.nav_my_posts) {
                 startActivity(new Intent(AcceuilActivity.this, MesPublicationActivity.class));
                 return true;
+            } else if (id == R.id.nav_marketplace) {
+                startActivity(new Intent(AcceuilActivity.this, MarketplaceActivity.class));
+                return true;
+            } else if (id == R.id.nav_gemini_assistant) {
+                startActivity(new Intent(AcceuilActivity.this, GeminiAssistantActivity.class));
+                return true;
             } else if (id == R.id.nav_videos) {
                 startActivity(new Intent(AcceuilActivity.this, VideoActivity.class));
                 return true;

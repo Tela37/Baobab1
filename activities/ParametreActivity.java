@@ -372,11 +372,13 @@ public class ParametreActivity extends AppCompatActivity {
         android.widget.TextView btnFr = findViewById(R.id.btnParamLangFrench);
         android.widget.TextView btnEn = findViewById(R.id.btnParamLangEnglish);
         android.widget.TextView btnAr = findViewById(R.id.btnParamLangArabic);
+        android.widget.TextView btnZh = findViewById(R.id.btnParamLangChinese);
 
         String currentLang = LocaleHelper.getPersistedLanguage(this, "fr");
         if (btnFr != null) btnFr.setAlpha("fr".equalsIgnoreCase(currentLang) ? 1.0f : 0.4f);
         if (btnEn != null) btnEn.setAlpha("en".equalsIgnoreCase(currentLang) ? 1.0f : 0.4f);
         if (btnAr != null) btnAr.setAlpha("ar".equalsIgnoreCase(currentLang) ? 1.0f : 0.4f);
+        if (btnZh != null) btnZh.setAlpha("zh".equalsIgnoreCase(currentLang) ? 1.0f : 0.4f);
 
         if (btnFr != null) {
             btnFr.setOnClickListener(v -> changeAppLanguage("fr"));
@@ -386,6 +388,9 @@ public class ParametreActivity extends AppCompatActivity {
         }
         if (btnAr != null) {
             btnAr.setOnClickListener(v -> changeAppLanguage("ar"));
+        }
+        if (btnZh != null) {
+            btnZh.setOnClickListener(v -> changeAppLanguage("zh"));
         }
     }
 

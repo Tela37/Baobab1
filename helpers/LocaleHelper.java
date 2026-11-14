@@ -33,6 +33,7 @@ public class LocaleHelper {
                 if (sysLang.startsWith("fr")) return "fr";
                 if (sysLang.startsWith("ar")) return "ar";
                 if (sysLang.startsWith("en")) return "en";
+                if (sysLang.startsWith("zh")) return "zh";
             }
         } catch (Exception ignored) {}
         return "en";
