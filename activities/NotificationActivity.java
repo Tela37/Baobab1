@@ -9,6 +9,8 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -33,6 +35,7 @@ public class NotificationActivity extends AppCompatActivity {
     private View layoutEmptyNotifications;
     private SwipeRefreshLayout swipeRefreshNotifications;
 
+    private td.teladoum.baobab.viewmodels.NotificationViewModel viewModel;
     private NotificationRepository notificationRepository;
     private SessionManager sessionManager;
 
@@ -41,8 +44,30 @@ public class NotificationActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notification);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                v.setPadding(0, statusBarInsets.top, 0, navBarInsets.bottom);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         Toolbar toolbar = findViewById(R.id.toolbarNotifications);
         setSupportActionBar(toolbar);
@@ -52,6 +77,24 @@ public class NotificationActivity extends AppCompatActivity {
 
         sessionManager = new SessionManager(this);
         notificationRepository = new NotificationRepository(this);
+
+        viewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.NotificationViewModel.class);
+        viewModel.getNotificationsLiveData().observe(this, newNotifications -> {
+            notificationList.clear();
+            if (newNotifications != null) {
+                notificationList.addAll(newNotifications);
+            }
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+            boolean isEmpty = notificationList.isEmpty();
+            if (layoutEmptyNotifications != null) {
+                layoutEmptyNotifications.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+            }
+            if (rvNotifications != null) {
+                rvNotifications.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+            }
+        });
 
         rvNotifications = findViewById(R.id.rvNotifications);
         layoutEmptyNotifications = findViewById(R.id.layoutEmptyNotifications);
@@ -94,6 +137,14 @@ public class NotificationActivity extends AppCompatActivity {
             });
         }
 
+        loadNotifications();
+        td.teladoum.baobab.helpers.BottomNavigationHelper.setupBottomNavigation(this, td.teladoum.baobab.helpers.BottomNavigationHelper.TAB_NOTIFICATIONS);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        td.teladoum.baobab.helpers.BottomNavigationHelper.setupBottomNavigation(this, td.teladoum.baobab.helpers.BottomNavigationHelper.TAB_NOTIFICATIONS);
         loadNotifications();
     }
 
@@ -149,9 +200,4 @@ public class NotificationActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        loadNotifications();
-    }
 }

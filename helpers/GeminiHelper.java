@@ -1,19 +1,30 @@
 package td.teladoum.baobab.helpers;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+
+import com.google.ai.client.generativeai.GenerativeModel;
+import com.google.ai.client.generativeai.java.GenerativeModelFutures;
+import com.google.ai.client.generativeai.type.Content;
+import com.google.ai.client.generativeai.type.GenerateContentResponse;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import td.teladoum.baobab.R;
+
 /**
- * Helper de gestion de l'Intelligence Artificielle Google Gemini.
+ * Helper de gestion de l'Intelligence Artificielle Google Gemini (SDK officiel).
  * Fournit 4 fonctionnalités clé :
  * 1. Assistant de Rédaction (Génération d'annonces, posts, messages).
- * 2. Résumé de groupe / chat (Synthèse des 150 derniers messages).
+ * 2. Résumé de groupe / chat (Synthèse des messages).
  * 3. Traduction In-App (Français, Anglais, Arabe, Chinois).
- * 4. Modération & Détection IA (Détection de spam, arnaques/scams et insultes).
+ * 4. Modération & Détection IA.
  */
 public class GeminiHelper {
 
@@ -30,22 +41,22 @@ public class GeminiHelper {
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     /**
-     * 1. Assistant de Rédaction : Génère un texte d'annonce, de post ou de message.
+     * 1. Assistant de Rédaction : Génère un texte d'annonce, de post ou de message via Gemini.
      */
-    public static void generateWritingAssistant(String prompt, AiCallback callback) {
+    public static void generateWritingAssistant(Context context, String prompt, AiCallback callback) {
         if (prompt == null || prompt.trim().isEmpty()) {
             if (callback != null) callback.onError("Veuillez fournir un sujet ou des détails.");
             return;
         }
 
         String fullPrompt = "Rédige une annonce de vente ou un message très attrayant, clair et professionnel basé sur la demande suivante :\n\n" + prompt;
-        executePrompt(fullPrompt, callback);
+        executePrompt(context, fullPrompt, callback);
     }
 
     /**
-     * 2. Résumé de Groupe / Chat : Synthétise la liste des messages récents.
+     * 2. Résumé de Groupe / Chat : Synthétise la liste des messages récents via Gemini.
      */
-    public static void summarizeChatMessages(List<String> messages, AiCallback callback) {
+    public static void summarizeChatMessages(Context context, List<String> messages, AiCallback callback) {
         if (messages == null || messages.isEmpty()) {
             if (callback != null) callback.onError("Aucun message à résumer.");
             return;
@@ -60,20 +71,20 @@ public class GeminiHelper {
         }
         sb.append("\nFais un résumé synthétique, clair et structuré en 3 à 5 puces clés de ces ").append(count).append(" messages.");
 
-        executePrompt(sb.toString(), callback);
+        executePrompt(context, sb.toString(), callback);
     }
 
     /**
-     * 3. Traduction In-App : Traduit un texte vers la langue cible (Français, Anglais, Arabe, Chinois).
+     * 3. Traduction In-App : Traduit un texte vers la langue cible via Gemini.
      */
-    public static void translateText(String text, String targetLang, AiCallback callback) {
+    public static void translateText(Context context, String text, String targetLang, AiCallback callback) {
         if (text == null || text.trim().isEmpty()) {
             if (callback != null) callback.onError("Texte vide.");
             return;
         }
 
-        String fullPrompt = "Traduis le texte suivant en " + targetLang + " :\n\n" + text;
-        executePrompt(fullPrompt, callback);
+        String fullPrompt = "Traduis fidèlement et naturellement le texte suivant en " + targetLang + " (réponds uniquement avec la traduction) :\n\n" + text;
+        executePrompt(context, fullPrompt, callback);
     }
 
     /**
@@ -96,7 +107,7 @@ public class GeminiHelper {
     /**
      * Boîte de dialogue générique pour traduire n'importe quel texte (message/post) via Gemini.
      */
-    public static void showTranslateDialog(android.content.Context context, String originalText) {
+    public static void showTranslateDialog(Context context, String originalText) {
         if (context == null || originalText == null || originalText.trim().isEmpty()) return;
 
         String[] languages = new String[]{"Français", "English (Anglais)", "العربية (Arabe)", "中文 (Chinois)"};
@@ -107,7 +118,7 @@ public class GeminiHelper {
                 .setItems(languages, (dialog, which) -> {
                     String targetLang = langCodes[which];
                     es.dmoral.toasty.Toasty.info(context, "Traduction en " + targetLang + "...", es.dmoral.toasty.Toasty.LENGTH_SHORT).show();
-                    translateText(originalText, targetLang, new AiCallback() {
+                    translateText(context, originalText, targetLang, new AiCallback() {
                         @Override
                         public void onSuccess(String result) {
                             new androidx.appcompat.app.AlertDialog.Builder(context)
@@ -126,31 +137,104 @@ public class GeminiHelper {
                 .show();
     }
 
-    private static void executePrompt(String prompt, AiCallback callback) {
-        executor.execute(() -> {
-            try {
-                Thread.sleep(800); // Temps de réflexion IA
-            } catch (InterruptedException ignored) {}
+    /**
+     * Assistant d'Exercice IA : Résout un problème ou un exercice scolaire étape par étape avec pédagogie.
+     */
+    public static void solveExercise(Context context, String exercisePrompt, AiCallback callback) {
+        if (exercisePrompt == null || exercisePrompt.trim().isEmpty()) {
+            if (callback != null) callback.onError("Veuillez saisir l'énoncé de l'exercice.");
+            return;
+        }
 
-            mainHandler.post(() -> executeSimulatedAiResponse(prompt, callback));
-        });
+        String fullPrompt = "Agis en tant que professeur particulier expert et bienveillant. Résous l'exercice ou réponds à la question suivante de manière claire, pédagogique et structurée étape par étape :\n\n" + exercisePrompt;
+        executePrompt(context, fullPrompt, callback);
     }
 
-    private static void executeSimulatedAiResponse(String prompt, AiCallback callback) {
-        if (callback == null) return;
+    public static void showExerciseSolverDialog(Context context) {
+        if (context == null) return;
 
-        if (prompt.contains("résumé") || prompt.contains("messages")) {
-            callback.onSuccess("✨ **Résumé des 150 derniers messages (IA Gemini)** :\n"
-                    + "• Les membres ont discuté de la réunion et de la planification de la semaine.\n"
-                    + "• Validation des propositions soumises dans le groupe.\n"
-                    + "• Accord général sur les étapes à suivre.");
-        } else if (prompt.contains("Traduis le texte")) {
-            String original = prompt.contains(":\n\n") ? prompt.substring(prompt.indexOf(":\n\n") + 4) : prompt;
-            callback.onSuccess("✨ [Traduction IA] " + original);
-        } else {
-            callback.onSuccess("✨ **Proposition de rédaction (IA Gemini)** :\n\n"
-                    + "📢 **Annonce Exclusive** : " + prompt.replace("Rédige une annonce...", "").trim() + "\n\n"
-                    + "💡 Excellent état, prix négociable. Contactez-moi directement pour plus d'informations !");
+        android.widget.EditText etInput = new android.widget.EditText(context);
+        etInput.setHint("Collez l'énoncé de votre exercice ou question de cours...");
+        etInput.setMinLines(4);
+        etInput.setPadding(32, 24, 32, 24);
+
+        new androidx.appcompat.app.AlertDialog.Builder(context)
+                .setTitle("🤖 Assistant d'Exercice IA Gemini")
+                .setView(etInput)
+                .setPositiveButton("Résoudre", (dialog, which) -> {
+                    String query = etInput.getText().toString().trim();
+                    if (query.isEmpty()) {
+                        es.dmoral.toasty.Toasty.warning(context, "Veuillez saisir un énoncé", es.dmoral.toasty.Toasty.LENGTH_SHORT).show();
+                        return;
+                    }
+                    es.dmoral.toasty.Toasty.info(context, "L'IA résout l'exercice...", es.dmoral.toasty.Toasty.LENGTH_SHORT).show();
+                    solveExercise(context, query, new AiCallback() {
+                        @Override
+                        public void onSuccess(String result) {
+                            new androidx.appcompat.app.AlertDialog.Builder(context)
+                                    .setTitle("💡 Solution détaillée (IA)")
+                                    .setMessage(result)
+                                    .setPositiveButton("OK", null)
+                                    .show();
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            es.dmoral.toasty.Toasty.error(context, "Erreur IA : " + error, es.dmoral.toasty.Toasty.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Annuler", null)
+                .show();
+    }
+
+    private static void executePrompt(Context context, String prompt, AiCallback callback) {
+        if (context == null || callback == null) return;
+
+        String apiKey = "";
+        try {
+            apiKey = context.getString(R.string.google_api_key);
+        } catch (Exception ignored) {}
+
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            apiKey = "AIzaSyC9pfXWrJAsHeBV6z5SrttHB_rsFebc_rY";
         }
+
+        final String finalApiKey = apiKey;
+        executor.execute(() -> {
+            try {
+                GenerativeModel gm = new GenerativeModel("gemini-1.5-flash", finalApiKey);
+                GenerativeModelFutures model = GenerativeModelFutures.from(gm);
+                Content content = new Content.Builder().addText(prompt).build();
+                ListenableFuture<GenerateContentResponse> response = model.generateContent(content);
+
+                Futures.addCallback(response, new FutureCallback<GenerateContentResponse>() {
+                    @Override
+                    public void onSuccess(GenerateContentResponse result) {
+                        String text = result.getText();
+                        mainHandler.post(() -> {
+                            if (callback != null) {
+                                callback.onSuccess(text != null ? text.trim() : "Pas de réponse.");
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(Throwable t) {
+                        mainHandler.post(() -> {
+                            if (callback != null) {
+                                callback.onError(t.getMessage() != null ? t.getMessage() : "Erreur Gemini API");
+                            }
+                        });
+                    }
+                }, Executors.newSingleThreadExecutor());
+            } catch (Exception e) {
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onError(e.getMessage() != null ? e.getMessage() : "Erreur initialisation Gemini");
+                    }
+                });
+            }
+        });
     }
 }

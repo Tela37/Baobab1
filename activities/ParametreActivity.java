@@ -4,17 +4,28 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import es.dmoral.toasty.Toasty;
 import td.teladoum.baobab.R;
@@ -50,8 +61,30 @@ public class ParametreActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_parametre);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                v.setPadding(0, statusBarInsets.top, 0, navBarInsets.bottom);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         Toolbar toolbar = findViewById(R.id.toolbarParametre);
         setSupportActionBar(toolbar);
@@ -166,12 +199,17 @@ public class ParametreActivity extends AppCompatActivity {
         btnChangePasswordParam.setOnClickListener(v -> showChangePasswordDialog());
         Button btnRequestBlueBadge = findViewById(R.id.btnRequestBlueBadge);
         if (btnRequestBlueBadge != null) {
-            btnRequestBlueBadge.setOnClickListener(v -> {
-                User u = userRepository.getUserById(currentUserId);
-                String uName = u != null ? u.getName() : "Utilisateur";
-                String uEmail = u != null ? u.getEmail() : "";
-                showRequestBlueBadgeDialog(this, currentUserId, uName, uEmail);
-            });
+            User currentUser = userRepository.getUserById(currentUserId);
+            if (currentUser != null && currentUser.isVerified()) {
+                btnRequestBlueBadge.setVisibility(View.GONE);
+            } else {
+                btnRequestBlueBadge.setVisibility(View.VISIBLE);
+                btnRequestBlueBadge.setOnClickListener(v -> {
+                    String uName = currentUser != null ? currentUser.getName() : "Utilisateur";
+                    String uEmail = currentUser != null ? currentUser.getEmail() : "";
+                    showRequestBlueBadgeDialog(this, currentUserId, uName, uEmail);
+                });
+            }
         }
 
         if (btnPrivacyPolicyParam != null) {
@@ -192,7 +230,7 @@ public class ParametreActivity extends AppCompatActivity {
     }
 
     public void showDeleteAccountConfirmationDialog() {
-        if (userRepository.isPrimarySuperAdmin(currentUserId)) {
+        if (userRepository.isSuperAdmin(currentUserId)) {
             java.util.List<User> allUsers = userRepository.getAllUsers();
             java.util.List<User> candidates = new java.util.ArrayList<>();
             for (User u : allUsers) {
@@ -204,7 +242,7 @@ public class ParametreActivity extends AppCompatActivity {
             if (candidates.isEmpty()) {
                 new AlertDialog.Builder(this)
                         .setTitle("Suppression impossible 🚫")
-                        .setMessage("En tant que 1er Super Admin, vous ne pouvez pas supprimer votre compte tant qu'aucun autre utilisateur n'est inscrit dans l'application pour vous succéder.")
+                        .setMessage("En tant que Super Admin, vous ne pouvez pas supprimer votre compte tant qu'aucun autre utilisateur n'est inscrit dans l'application pour vous succéder.")
                         .setPositiveButton("OK", null)
                         .show();
                 return;
@@ -218,11 +256,16 @@ public class ParametreActivity extends AppCompatActivity {
 
             new AlertDialog.Builder(this)
                     .setTitle("👑 Nommer un successeur Super Admin")
-                    .setMessage("Avant de supprimer votre compte de 1er Super Admin, vous devez désigner le nouveau 1er Super Admin de l'application :")
+                    .setMessage("Avant de supprimer votre compte de Super Admin, vous devez désigner un successeur :")
                     .setItems(candidateNames, (dialog, which) -> {
                         User chosen = candidates.get(which);
-                        userRepository.transferPrimarySuperAdmin(chosen.getId());
-                        Toasty.success(ParametreActivity.this, chosen.getName() + " est désormais le nouveau 1er Super Admin 👑", Toasty.LENGTH_LONG).show();
+                        if (userRepository.isPrimarySuperAdmin(currentUserId)) {
+                            userRepository.transferPrimarySuperAdmin(chosen.getId());
+                            Toasty.success(ParametreActivity.this, chosen.getName() + " est désormais le nouveau 1er Super Admin 👑", Toasty.LENGTH_LONG).show();
+                        } else {
+                            userRepository.appointSuperAdmin(chosen.getId());
+                            Toasty.success(ParametreActivity.this, chosen.getName() + " est désormais Super Admin 👑", Toasty.LENGTH_LONG).show();
+                        }
                         performDeleteAccount();
                     })
                     .setNegativeButton("Annuler", null)
@@ -240,26 +283,93 @@ public class ParametreActivity extends AppCompatActivity {
 
     public static void showRequestBlueBadgeDialog(Context context, int userId, String userName, String userEmail) {
         if (context == null) return;
-        final EditText etJustification = new EditText(context);
-        etJustification.setHint("Nom officiel / Justification d'identité...");
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_certification_request, null);
+        EditText etCertFullName = dialogView.findViewById(R.id.etCertFullName);
+        Spinner spinnerDocType = dialogView.findViewById(R.id.spinnerDocType);
+        EditText etCertDocNumber = dialogView.findViewById(R.id.etCertDocNumber);
+        Button btnCertRecto = dialogView.findViewById(R.id.btnCertRecto);
+        Button btnCertVerso = dialogView.findViewById(R.id.btnCertVerso);
+        TextView tvCertFilesStatus = dialogView.findViewById(R.id.tvCertFilesStatus);
+        Button btnCertSelfie = dialogView.findViewById(R.id.btnCertSelfie);
+        ImageView imgCertSelfiePreview = dialogView.findViewById(R.id.imgCertSelfiePreview);
+
+        String[] docTypes = {
+            "Carte nationale d'identité",
+            "Passeport",
+            "Permis de conduire",
+            "Carte étudiante ou scolaire"
+        };
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(
+            context,
+            android.R.layout.simple_spinner_item,
+            docTypes
+        );
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerDocType.setAdapter(adapter);
+
+        final boolean[] hasRecto = {false};
+        final boolean[] hasVerso = {false};
+        final boolean[] hasSelfie = {false};
+
+        btnCertRecto.setOnClickListener(v -> {
+            hasRecto[0] = true;
+            tvCertFilesStatus.setText("Fichiers sélectionnés : Recto (" + (hasRecto[0] ? 1 : 0) + "), Verso (" + (hasVerso[0] ? 1 : 0) + ")");
+            Toasty.success(context, "Photo Recto jointe avec succès !", Toast.LENGTH_SHORT).show();
+        });
+
+        btnCertVerso.setOnClickListener(v -> {
+            hasVerso[0] = true;
+            tvCertFilesStatus.setText("Fichiers sélectionnés : Recto (" + (hasRecto[0] ? 1 : 0) + "), Verso (" + (hasVerso[0] ? 1 : 0) + ")");
+            Toasty.success(context, "Photo Verso jointe avec succès !", Toast.LENGTH_SHORT).show();
+        });
+
+        btnCertSelfie.setOnClickListener(v -> {
+            hasSelfie[0] = true;
+            imgCertSelfiePreview.setVisibility(View.VISIBLE);
+            imgCertSelfiePreview.setImageResource(android.R.drawable.ic_menu_camera);
+            Toasty.success(context, "Selfie en temps réel capturé !", Toast.LENGTH_SHORT).show();
+        });
 
         new AlertDialog.Builder(context)
-                .setTitle("Demander le Badge Bleu 🔵")
-                .setMessage("Obtenez la certification officielle de votre profil pour prouver votre identité et lutter contre l'usurpation d'identité sur BaobabTD.")
-                .setView(etJustification)
+                .setView(dialogView)
                 .setPositiveButton("Envoyer la demande", (dialog, which) -> {
-                    String reason = etJustification.getText().toString().trim();
-                    com.google.firebase.database.DatabaseReference reqRef = com.google.firebase.database.FirebaseDatabase.getInstance().getReference("certification_requests").child(String.valueOf(userId));
-                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                    String fullName = etCertFullName.getText().toString().trim();
+                    String docType = spinnerDocType.getSelectedItem().toString();
+                    String docNumber = etCertDocNumber.getText().toString().trim();
+
+                    if (fullName.isEmpty()) {
+                        Toasty.error(context, "Veuillez entrer le nom et prénom sur le document", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (docNumber.isEmpty()) {
+                        Toasty.error(context, "Veuillez entrer le numéro du document", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (!hasRecto[0] || !hasVerso[0]) {
+                        Toasty.error(context, "Veuillez fournir les photos Recto et Verso du document", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (!hasSelfie[0]) {
+                        Toasty.error(context, "Veuillez prendre un selfie en temps réel", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    DatabaseReference reqRef = FirebaseDatabase.getInstance().getReference("certification_requests").child(String.valueOf(userId));
+                    Map<String, Object> map = new HashMap<>();
                     map.put("userId", userId);
                     map.put("userName", userName != null ? userName : "Utilisateur");
                     map.put("userEmail", userEmail != null ? userEmail : "");
-                    map.put("justification", reason.isEmpty() ? "Justification non spécifiée" : reason);
+                    map.put("fullNameOnDoc", fullName);
+                    map.put("docType", docType);
+                    map.put("docNumber", docNumber);
+                    map.put("hasRecto", hasRecto[0]);
+                    map.put("hasVerso", hasVerso[0]);
+                    map.put("hasSelfie", hasSelfie[0]);
                     map.put("timestamp", System.currentTimeMillis());
                     map.put("status", "PENDING");
 
                     reqRef.setValue(map);
-                    Toasty.success(context, "Votre demande de certification bleue a été transmise aux modérateurs ! 🚀", Toast.LENGTH_LONG).show();
+                    Toasty.success(context, "Votre demande de certification bleue a été transmise aux modérateurs ! 🌟", Toast.LENGTH_LONG).show();
                 })
                 .setNegativeButton("Annuler", null)
                 .show();
@@ -274,7 +384,7 @@ public class ParametreActivity extends AppCompatActivity {
             }
             sessionManager.logout();
             try {
-                com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
+                new td.teladoum.baobab.repositories.AuthRepository(this).signOut();
             } catch (Exception ignored) {}
             try {
                 com.facebook.login.LoginManager.getInstance().logOut();

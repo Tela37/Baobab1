@@ -24,6 +24,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ActionMode;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -73,8 +75,30 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                v.setPadding(0, statusBarInsets.top, 0, navBarInsets.bottom);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -150,11 +174,7 @@ public class MainActivity extends AppCompatActivity {
             if (!sessionManager.hasPrivatePin()) {
                 showSetPinDialog(() -> openChatActivity(conversation));
             } else {
-                BiometricHelper.showBiometricPrompt(
-                        this,
-                        () -> openChatActivity(conversation),
-                        () -> showVerifyPinDialog(() -> openChatActivity(conversation))
-                );
+                verifyBiometricOrPin(() -> openChatActivity(conversation));
             }
         } else {
             openChatActivity(conversation);
@@ -216,6 +236,18 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("Annuler", null)
                 .show();
+    }
+
+    private void verifyBiometricOrPin(Runnable onSuccess) {
+        if (BiometricHelper.canAuthenticate(this)) {
+            BiometricHelper.showBiometricPrompt(
+                    this,
+                    onSuccess,
+                    () -> showVerifyPinDialog(onSuccess)
+            );
+        } else {
+            showVerifyPinDialog(onSuccess);
+        }
     }
 
     private final ActionMode.Callback actionModeCallback = new ActionMode.Callback() {
@@ -511,11 +543,7 @@ public class MainActivity extends AppCompatActivity {
             if (!sessionManager.hasPrivatePin()) {
                 showSetPinDialog(null);
             } else {
-                BiometricHelper.showBiometricPrompt(
-                        this,
-                        () -> Toasty.success(MainActivity.this, "Mode privé déverrouillé 🔒", Toasty.LENGTH_SHORT).show(),
-                        () -> showVerifyPinDialog(() -> Toasty.success(MainActivity.this, "Mode privé déverrouillé 🔒", Toasty.LENGTH_SHORT).show())
-                );
+                verifyBiometricOrPin(() -> Toasty.success(MainActivity.this, "Mode privé déverrouillé 🔒", Toasty.LENGTH_SHORT).show());
             }
             return true;
         } else if (id == R.id.action_settings) {

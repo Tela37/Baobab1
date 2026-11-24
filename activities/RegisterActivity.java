@@ -11,6 +11,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import es.dmoral.toasty.Toasty;
 import td.teladoum.baobab.R;
@@ -33,12 +35,37 @@ public class RegisterActivity extends AppCompatActivity {
     private TextView tvLogin;
     private ProgressBar progressBar;
 
+    private td.teladoum.baobab.viewmodels.RegisterViewModel registerViewModel;
     private UserRepository userRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                androidx.core.graphics.Insets imeInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime());
+                int bottomInset = Math.max(navBarInsets.bottom, imeInsets.bottom);
+                v.setPadding(0, statusBarInsets.top, 0, bottomInset);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         etEmail = findViewById(R.id.etEmail);
         if (etEmail != null) {
@@ -50,6 +77,17 @@ public class RegisterActivity extends AppCompatActivity {
         btnRegister = findViewById(R.id.btnRegister);
         tvLogin = findViewById(R.id.tvLogin);
         progressBar = findViewById(R.id.progressBar);
+
+        registerViewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.RegisterViewModel.class);
+        registerViewModel.getIsLoadingLiveData().observe(this, isLoading -> {
+            if (progressBar != null) progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+            if (btnRegister != null) btnRegister.setEnabled(!isLoading);
+        });
+        registerViewModel.getErrorMessageLiveData().observe(this, msg -> {
+            if (msg != null && !msg.isEmpty()) {
+                Toasty.error(this, msg, Toasty.LENGTH_SHORT).show();
+            }
+        });
 
         userRepository = new UserRepository(this);
 
@@ -150,6 +188,10 @@ public class RegisterActivity extends AppCompatActivity {
         FirebaseHelper.getInstance().registerUser(email, password, task -> {
             if (task.isSuccessful() || (task.getException() != null && task.getException().getMessage() != null && task.getException().getMessage().contains("already in use"))) {
                 com.google.firebase.auth.FirebaseUser fbUser = FirebaseHelper.getInstance().getAuth().getCurrentUser();
+                String firebaseUid = "";
+                if (fbUser != null) {
+                    firebaseUid = fbUser.getUid();
+                }
                 if (fbUser != null && !fbUser.isEmailVerified() && phone == null) {
                     try {
                         fbUser.sendEmailVerification();
@@ -160,7 +202,10 @@ public class RegisterActivity extends AppCompatActivity {
                 Intent intent = new Intent(RegisterActivity.this, CreateProfileActivity.class);
                 intent.putExtra("email", email);
                 intent.putExtra("password", hashedPassword);
-                if (phone != null) intent.putExtra("phone", phone);
+                intent.putExtra("firebaseUid", firebaseUid);
+                if (phone != null) {
+                    intent.putExtra("phone", phone);
+                }
                 startActivity(intent);
                 finish();
             } else {

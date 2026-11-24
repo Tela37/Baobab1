@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -15,14 +17,18 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import td.teladoum.baobab.helpers.DialogUtils;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -37,6 +43,12 @@ import java.util.List;
 
 import es.dmoral.toasty.Toasty;
 import td.teladoum.baobab.R;
+import td.teladoum.baobab.models.Group;
+import td.teladoum.baobab.models.User;
+import td.teladoum.baobab.repositories.ConversationRepository;
+import td.teladoum.baobab.repositories.GroupRepository;
+import td.teladoum.baobab.repositories.MessageRepository;
+import td.teladoum.baobab.repositories.UserRepository;
 import td.teladoum.baobab.helpers.GeminiHelper;
 import td.teladoum.baobab.models.Group;
 import td.teladoum.baobab.models.GroupMessage;
@@ -65,6 +77,9 @@ public class GroupChatActivity extends AppCompatActivity {
     private ImageButton ibRecordAudio;
     private EditText etGroupMessage;
     private Button btnSendGroupMessage;
+    private ProgressBar groupprogressChars;
+    private TextView tvCounter;
+    private static final int MAX_CHARS = 500;
 
     private GroupRepository groupRepository;
     private SessionManager sessionManager;
@@ -163,8 +178,32 @@ public class GroupChatActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_group_chat);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                androidx.core.graphics.Insets imeInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime());
+                int bottomInset = Math.max(navBarInsets.bottom, imeInsets.bottom);
+                v.setPadding(0, statusBarInsets.top, 0, bottomInset);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         groupId = getIntent().getIntExtra("group_id", -1);
 
@@ -230,6 +269,29 @@ public class GroupChatActivity extends AppCompatActivity {
         ibRecordAudio = findViewById(R.id.ibRecordAudio);
         etGroupMessage = findViewById(R.id.etGroupMessage);
         btnSendGroupMessage = findViewById(R.id.btnSendGroupMessage);
+        groupprogressChars = findViewById(R.id.groupprogressChars);
+        tvCounter = findViewById(R.id.tvCounter);
+        if (groupprogressChars != null) groupprogressChars.setMax(MAX_CHARS);
+        setupCharacterCounter();
+    }
+
+    private void setupCharacterCounter() {
+        if (etGroupMessage == null) return;
+        etGroupMessage.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                int length = s.length();
+                if (tvCounter != null) tvCounter.setText(length + "/" + MAX_CHARS);
+                if (groupprogressChars != null) groupprogressChars.setProgress(length);
+                if (btnSendGroupMessage != null) btnSendGroupMessage.setEnabled(length <= MAX_CHARS);
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
+        });
     }
 
     private void setupToolbar() {
@@ -302,6 +364,8 @@ public class GroupChatActivity extends AppCompatActivity {
         boolean sent = groupRepository.sendGroupMessage(groupId, currentUserId, text, null);
         if (sent) {
             etGroupMessage.setText("");
+            if (tvCounter != null) tvCounter.setText("0/" + MAX_CHARS);
+            if (groupprogressChars != null) groupprogressChars.setProgress(0);
             loadGroupMessages();
         } else {
             Toasty.error(this, "Erreur d'envoi du message", Toasty.LENGTH_SHORT).show();
@@ -452,25 +516,22 @@ public class GroupChatActivity extends AppCompatActivity {
 
         if (ibClose != null) {
             ibClose.bringToFront();
-            ibClose.setOnClickListener(v -> {
-                if (dialog.isShowing()) {
-                    dialog.dismiss();
-                }
-            });
+            ibClose.setOnClickListener(v -> DialogUtils.safeDismiss(dialog));
         }
 
         dialog.show();
     }
 
     private void showGroupMessageOptionsDialog(GroupMessage msg) {
-        if (msg.getSenderId() != currentUserId && !isAdmin) {
-            return;
-        }
+        boolean canDelete = (msg.getSenderId() == currentUserId || isAdmin);
+        String[] options = canDelete ? new String[]{"↗️ Transférer le message", "🗑️ Supprimer le message"} : new String[]{"↗️ Transférer le message"};
 
         new AlertDialog.Builder(this)
                 .setTitle("Options du message")
-                .setItems(new String[]{"🗑️ Supprimer le message"}, (dialog, which) -> {
+                .setItems(options, (dialog, which) -> {
                     if (which == 0) {
+                        showForwardTargetDialog(msg);
+                    } else if (which == 1 && canDelete) {
                         boolean deleted = groupRepository.deleteGroupMessage(groupId, msg.getId(), currentUserId);
                         if (deleted) {
                             Toasty.success(this, "Message supprimé", Toast.LENGTH_SHORT).show();
@@ -478,6 +539,53 @@ public class GroupChatActivity extends AppCompatActivity {
                         } else {
                             Toasty.error(this, "Impossible de supprimer : le délai de 10 heures est dépassé ou non autorisé", Toast.LENGTH_LONG).show();
                         }
+                    }
+                })
+                .show();
+    }
+
+    private void showForwardTargetDialog(GroupMessage message) {
+        MessageRepository mRepo = new MessageRepository(this);
+        GroupRepository gRepo = new GroupRepository(this);
+        UserRepository uRepo = new UserRepository(this);
+        ConversationRepository cRepo = new ConversationRepository(this);
+
+        List<User> users = uRepo.getAllUsersExcept(currentUserId);
+        List<Group> groups = gRepo.getUserGroups(currentUserId);
+
+        List<String> names = new ArrayList<>();
+        List<Object> targets = new ArrayList<>();
+
+        for (User u : users) {
+            names.add("👤 " + (u.getName() != null ? u.getName() : "Utilisateur"));
+            targets.add(u);
+        }
+        for (Group g : groups) {
+            names.add("Groupe: " + g.getName());
+            targets.add(g);
+        }
+
+        if (names.isEmpty()) {
+            Toasty.info(this, "Aucun destinataire disponible", Toasty.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] nameArr = names.toArray(new String[0]);
+        new AlertDialog.Builder(this)
+                .setTitle("Transférer le message vers...")
+                .setItems(nameArr, (dialog, which) -> {
+                    Object target = targets.get(which);
+                    String forwardText = "---------- Message transféré ----------\n" + (message.getMessage() != null ? message.getMessage() : "");
+
+                    if (target instanceof User) {
+                        User destUser = (User) target;
+                        int destConvId = cRepo.createConversationIfNotExists(currentUserId, destUser.getId());
+                        mRepo.sendMessage(destConvId, currentUserId, forwardText, message.getImagePath());
+                        Toasty.success(GroupChatActivity.this, "Message transféré à " + destUser.getName() + " 🚀", Toast.LENGTH_SHORT).show();
+                    } else if (target instanceof Group) {
+                        Group destGroup = (Group) target;
+                        gRepo.sendGroupMessage(destGroup.getId(), currentUserId, forwardText, message.getImagePath());
+                        Toasty.success(GroupChatActivity.this, "Message partagé dans le groupe " + destGroup.getName() + " 🚀", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .show();
@@ -574,7 +682,7 @@ public class GroupChatActivity extends AppCompatActivity {
         }
 
         Toasty.info(this, "Génération du résumé du groupe par l'IA Gemini...", Toasty.LENGTH_SHORT).show();
-        GeminiHelper.summarizeChatMessages(formattedMsgs, new GeminiHelper.AiCallback() {
+        GeminiHelper.summarizeChatMessages(this, formattedMsgs, new GeminiHelper.AiCallback() {
             @Override
             public void onSuccess(String result) {
                 new androidx.appcompat.app.AlertDialog.Builder(GroupChatActivity.this)

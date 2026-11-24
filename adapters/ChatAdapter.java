@@ -2,6 +2,7 @@ package td.teladoum.baobab.adapters;
 
 import android.graphics.Color;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -33,12 +34,17 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final int currentUserId;
     private String receiverProfileImage;
     private OnMessageLongClickListener longClickListener;
+    private OnMessageDoubleClickListener doubleClickListener;
     private OnImageClickListener imageClickListener;
     private OnVideoClickListener videoClickListener;
     private OnAudioClickListener audioClickListener;
 
     public interface OnMessageLongClickListener {
         void onMessageLongClick(Message message);
+    }
+
+    public interface OnMessageDoubleClickListener {
+        void onMessageDoubleClick(Message message);
     }
 
     public interface OnImageClickListener {
@@ -70,6 +76,16 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public ChatAdapter(List<Message> messageList,
                        int currentUserId,
                        OnMessageLongClickListener longClickListener,
+                       OnMessageDoubleClickListener doubleClickListener) {
+        this.messageList = messageList;
+        this.currentUserId = currentUserId;
+        this.longClickListener = longClickListener;
+        this.doubleClickListener = doubleClickListener;
+    }
+
+    public ChatAdapter(List<Message> messageList,
+                       int currentUserId,
+                       OnMessageLongClickListener longClickListener,
                        OnImageClickListener imageClickListener) {
         this.messageList = messageList;
         this.currentUserId = currentUserId;
@@ -80,13 +96,17 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public ChatAdapter(List<Message> messageList,
                        int currentUserId,
                        OnMessageLongClickListener longClickListener,
+                       OnMessageDoubleClickListener doubleClickListener,
                        OnImageClickListener imageClickListener,
-                       OnVideoClickListener videoClickListener) {
+                       OnVideoClickListener videoClickListener,
+                       OnAudioClickListener audioClickListener) {
         this.messageList = messageList;
         this.currentUserId = currentUserId;
         this.longClickListener = longClickListener;
+        this.doubleClickListener = doubleClickListener;
         this.imageClickListener = imageClickListener;
         this.videoClickListener = videoClickListener;
+        this.audioClickListener = audioClickListener;
     }
 
     public ChatAdapter(List<Message> messageList,
@@ -107,8 +127,16 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.longClickListener = longClickListener;
     }
 
+    public void setOnMessageDoubleClickListener(OnMessageDoubleClickListener doubleClickListener) {
+        this.doubleClickListener = doubleClickListener;
+    }
+
     public void updateMessages(List<Message> newMessages) {
         if (newMessages == null) return;
+        if (newMessages == this.messageList) {
+            notifyDataSetChanged();
+            return;
+        }
         androidx.recyclerview.widget.DiffUtil.DiffResult diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(new MessageDiffCallback(this.messageList, newMessages));
         this.messageList.clear();
         this.messageList.addAll(newMessages);
@@ -233,6 +261,17 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
         }
 
+        final long[] lastClickTime = {0};
+        holder.itemView.setOnClickListener(v -> {
+            long clickTime = System.currentTimeMillis();
+            if (clickTime - lastClickTime[0] < 300) {
+                if (doubleClickListener != null) {
+                    doubleClickListener.onMessageDoubleClick(message);
+                }
+            }
+            lastClickTime[0] = clickTime;
+        });
+
         holder.itemView.setOnLongClickListener(v -> {
             if (longClickListener != null) {
                 longClickListener.onMessageLongClick(message);
@@ -298,6 +337,26 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ibAudioPlay.setOnClickListener(null);
         }
 
+        if (message.getMessage() != null && (message.getMessage().contains("Appel vocal manqué") || message.getMessage().contains("Appel vidéo manqué"))) {
+            txtMessage.setVisibility(View.VISIBLE);
+            txtMessage.setText(message.getMessage() + "\n[ 📞 Appuyer pour Rappeler ]");
+            txtMessage.setTextColor(Color.parseColor("#E53935"));
+            txtMessage.setTypeface(null, android.graphics.Typeface.BOLD);
+            txtMessage.setOnClickListener(v -> {
+                boolean isVideo = message.getMessage().contains("vidéo");
+                android.content.Intent intent = new android.content.Intent(v.getContext(), td.teladoum.baobab.activities.CallActivity.class);
+                intent.putExtra("is_video_call", isVideo);
+                intent.putExtra("target_name", "Correspondant");
+                td.teladoum.baobab.repositories.ConversationRepository cRepo = new td.teladoum.baobab.repositories.ConversationRepository(v.getContext());
+                int otherUserId = cRepo.getOtherUserId(message.getConversationId(), currentUserId);
+                intent.putExtra("receiver_id", otherUserId);
+                v.getContext().startActivity(intent);
+            });
+            return;
+        } else {
+            txtMessage.setOnClickListener(null);
+        }
+
         if (message.getMessage() != null && !message.getMessage().trim().isEmpty()) {
             txtMessage.setVisibility(View.VISIBLE);
             txtMessage.setText(message.getMessage());
@@ -334,7 +393,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public int getItemCount() {
-        return messageList.size();
+        return messageList != null ? messageList.size() : 0;
     }
 
     private String formatTime(String dateTime) {

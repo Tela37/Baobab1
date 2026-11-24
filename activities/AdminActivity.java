@@ -13,12 +13,16 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import td.teladoum.baobab.helpers.DialogUtils;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -34,7 +38,6 @@ import es.dmoral.toasty.Toasty;
 import td.teladoum.baobab.R;
 import td.teladoum.baobab.firebase.FirebaseHelper;
 import td.teladoum.baobab.models.User;
-import td.teladoum.baobab.models.VideoModel;
 import td.teladoum.baobab.repositories.NotificationRepository;
 import td.teladoum.baobab.repositories.PostRepository;
 import td.teladoum.baobab.repositories.UserRepository;
@@ -57,24 +60,34 @@ public class AdminActivity extends AppCompatActivity {
     private UserRepository userRepository;
     private NotificationRepository notificationRepository;
 
-    private Uri selectedAdminVideoUri;
-    private EditText etAdminVideoUrl;
 
-    private final ActivityResultLauncher<String> videoPickerLauncher =
-            registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.GetContent(), uri -> {
-                if (uri != null) {
-                    selectedAdminVideoUri = uri;
-                    if (etAdminVideoUrl != null) {
-                        etAdminVideoUrl.setText(uri.toString());
-                    }
-                    Toasty.info(this, "Vidéo sélectionnée depuis votre téléphone 🎬", Toasty.LENGTH_SHORT).show();
-                }
-            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                v.setPadding(0, statusBarInsets.top, 0, navBarInsets.bottom);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         Toolbar toolbar = findViewById(R.id.toolbarAdmin);
         setSupportActionBar(toolbar);
@@ -127,16 +140,17 @@ public class AdminActivity extends AppCompatActivity {
         if (publierAnnonce != null) {
             publierAnnonce.setOnClickListener(v -> showPublishSimpleAnnouncementDialog());
         }
+        Button btnManageBlueBadges = findViewById(R.id.btnManageBlueBadges);
+        if (btnManageBlueBadges != null) {
+            btnManageBlueBadges.setOnClickListener(v -> showManageBlueBadgesDialog());
+        }
         listenToAnnouncementState();
         listenToRealtimeStatistics();
         listenToCertificationRequests();
 
         adminViewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.AdminViewModel.class);
         setupAdminViewModelObservers();
-        Button btnPublishVideo = findViewById(R.id.btnPublishVideo);
-        if (btnPublishVideo != null) {
-            btnPublishVideo.setOnClickListener(v -> showPublishVideoDialog());
-        }
+
         rvReports = findViewById(R.id.rvReports);
         rvUsers = findViewById(R.id.rvUsers);
 
@@ -147,7 +161,7 @@ public class AdminActivity extends AppCompatActivity {
             @Override
             public void onDeletePost(PostRepository.ReportItem item) {
                 new AlertDialog.Builder(AdminActivity.this)
-                        .setTitle("Supprimer la publication 🗑️")
+                        .setTitle("Supprimer la publication")
                         .setMessage("Voulez-vous supprimer ce post signalé ? Cette action est irréversible.")
                         .setPositiveButton("Supprimer", (dialog, which) -> {
                             postRepository.deletePost(item.postId, item.reporterId);
@@ -167,7 +181,7 @@ public class AdminActivity extends AppCompatActivity {
             }
         });
 
-        usersAdapter = new UsersAdapter(usersList, new OnUserActionListener() {
+        usersAdapter = new UsersAdapter(usersList, userRepository, new OnUserActionListener() {
             @Override
             public void onDeleteUser(User user) {
                 int primarySuperAdminId = userRepository.getPrimarySuperAdminId();
@@ -180,6 +194,10 @@ public class AdminActivity extends AppCompatActivity {
                 }
                 if (userRepository.isSuperAdmin(user.getId()) && !userRepository.isPrimarySuperAdmin(sessionManager.getUserId())) {
                     Toasty.error(AdminActivity.this, getString(R.string.toast_only_primary_can_delete_super_admin), Toasty.LENGTH_SHORT).show();
+                    return;
+                }
+                if (user.getId() == sessionManager.getUserId() && userRepository.isSuperAdmin(user.getId())) {
+                    showDeleteAccountWithSuccessorDialog(user);
                     return;
                 }
                 new AlertDialog.Builder(AdminActivity.this)
@@ -202,6 +220,10 @@ public class AdminActivity extends AppCompatActivity {
                         notificationRepository.addNotification(primarySuperAdminId, sessionManager.getUserId(), "ADMIN_SECURITY_ALERT", "USER", primarySuperAdminId, "⚠️ L'administrateur " + currentUser.getName() + " a tenté de suspendre le 1er Super Admin.");
                     }
                     Toasty.error(AdminActivity.this, "Impossible de suspendre le 1er Super Admin (Fondateur) 🚫", Toasty.LENGTH_SHORT).show();
+                    return;
+                }
+                if (userRepository.isSuperAdmin(user.getId()) && !userRepository.isPrimarySuperAdmin(sessionManager.getUserId())) {
+                    Toasty.error(AdminActivity.this, "Seul le 1er Super Admin peut suspendre un autre Super Admin", Toasty.LENGTH_SHORT).show();
                     return;
                 }
                 boolean currentlySuspended = user.isSuspended();
@@ -234,6 +256,10 @@ public class AdminActivity extends AppCompatActivity {
                         notificationRepository.addNotification(primarySuperAdminId, sessionManager.getUserId(), "ADMIN_SECURITY_ALERT", "USER", primarySuperAdminId, "⚠️ L'administrateur " + currentUser.getName() + " a tenté de limiter le partage du 1er Super Admin.");
                     }
                     Toasty.error(AdminActivity.this, "Impossible de restreindre le 1er Super Admin (Fondateur) 🚫", Toasty.LENGTH_SHORT).show();
+                    return;
+                }
+                if (userRepository.isSuperAdmin(user.getId()) && !userRepository.isPrimarySuperAdmin(sessionManager.getUserId())) {
+                    Toasty.error(AdminActivity.this, "Seul le 1er Super Admin peut restreindre un autre Super Admin", Toasty.LENGTH_SHORT).show();
                     return;
                 }
                 String[] options = {"1 Heure", "24 Heures", "7 Jours", "30 Jours", "Permanent", "Retirer la limitation"};
@@ -303,10 +329,27 @@ public class AdminActivity extends AppCompatActivity {
                     return;
                 }
 
-                boolean newAdminStatus = !user.isAdmin();
-                userRepository.setAdmin(user.getId(), newAdminStatus);
-                Toasty.success(AdminActivity.this, newAdminStatus ? user.getName() + " est désormais Administrateur" : user.getName() + " n'est plus Administrateur", Toasty.LENGTH_SHORT).show();
-                loadUsers();
+                if (user.isAdmin() && !userRepository.isSuperAdmin(user.getId())) {
+                    userRepository.setSimpleAdmin(user.getId(), false);
+                    Toasty.success(AdminActivity.this, user.getName() + " n'est plus Administrateur", Toasty.LENGTH_SHORT).show();
+                    loadUsers();
+                    return;
+                }
+
+                String[] promoteOptions = {"Administrateur Simple 🛡️", "Super Admin 👑"};
+                new AlertDialog.Builder(AdminActivity.this)
+                        .setTitle("Promouvoir " + user.getName())
+                        .setItems(promoteOptions, (dialog, which) -> {
+                            if (which == 0) {
+                                userRepository.setSimpleAdmin(user.getId(), true);
+                                Toasty.success(AdminActivity.this, user.getName() + " est désormais Administrateur Simple 🛡️", Toasty.LENGTH_SHORT).show();
+                            } else {
+                                userRepository.appointSuperAdmin(user.getId());
+                                Toasty.success(AdminActivity.this, user.getName() + " est désormais Super Admin 👑", Toasty.LENGTH_SHORT).show();
+                            }
+                            loadUsers();
+                        })
+                        .show();
             }
         });
 
@@ -516,7 +559,7 @@ public class AdminActivity extends AppCompatActivity {
 
         String statsText = "📊 Statistiques de l'application :\n" +
                 "• Total des abonnés : " + total + " (👨 " + male + " | 👩 " + female + ")\n" +
-                "• 🟢 En ligne actuellement : " + onlineUserNames.size() + " (👉 Cliquer pour voir la liste)\n" +
+                "• 🟢 En ligne actuellement : " + onlineUserNames.size() + "\n (👉 Cliquer pour voir la liste)\n" +
                 "• 🟢 Connectés aujourd'hui (Journalier) : " + dailyActive + "\n" +
                 "• 📅 Connectés ce mois-ci (Mensuel) : " + monthlyActive + "\n" +
                 "• 🗓️ Connectés cette année (Annuel) : " + yearlyActive;
@@ -634,31 +677,31 @@ public class AdminActivity extends AppCompatActivity {
         String[] items = new String[requests.size()];
         for (int i = 0; i < requests.size(); i++) {
             java.util.Map<String, Object> req = requests.get(i);
-            items[i] = "🔵 " + req.get("userName") + " : " + req.get("justification");
+            items[i] = "🌟 " + req.get("userName") + " : " + req.get("justification");
         }
 
         SessionManager sm = new SessionManager(this);
         new AlertDialog.Builder(this)
-                .setTitle("🔵 Demandes de Certification (" + requests.size() + ")")
+                .setTitle("🌟 Demandes de Certification (" + requests.size() + ")")
                 .setItems(items, (dialog, which) -> {
                     java.util.Map<String, Object> req = requests.get(which);
                     int targetUserId = (int) req.get("userId");
                     String targetUserName = (String) req.get("userName");
 
-                    String[] actions = {"Approuver (Accorder le Badge Bleu 🔵)", "Refuser la demande ❌"};
+                    String[] actions = {"Approuver (Accorder le Badge Bleu 🌟)", "Refuser la demande ❌"};
                     new AlertDialog.Builder(this)
                             .setTitle("Demande de " + targetUserName)
                             .setItems(actions, (dialog2, whichAction) -> {
                                 if (whichAction == 0) {
                                     userRepository.setUserVerified(targetUserId, true);
                                     com.google.firebase.database.FirebaseDatabase.getInstance().getReference("certification_requests").child(String.valueOf(targetUserId)).removeValue();
-                                    notificationRepository.addNotification(targetUserId, sm.getUserId(), "CERTIFICATION_APPROVED", "USER", targetUserId, "🎉 Félicitations ! Votre compte a été certifié et a obtenu le Badge Bleu 🔵 !");
-                                    Toasty.success(AdminActivity.this, "Badge Bleu accordé à " + targetUserName + " 🔵", Toasty.LENGTH_SHORT).show();
+                                    notificationRepository.addNotification(targetUserId, sm.getUserId(), "CERTIFICATION_APPROVED", "USER", targetUserId, "🎉 Félicitations ! Votre compte a été certifié et a obtenu le Badge Bleu 🌟 !");
+                                    Toasty.success(AdminActivity.this, "Badge Bleu accordé à " + targetUserName + " 🌟", Toast.LENGTH_SHORT).show();
                                     loadUsers();
                                 } else {
                                     com.google.firebase.database.FirebaseDatabase.getInstance().getReference("certification_requests").child(String.valueOf(targetUserId)).removeValue();
                                     notificationRepository.addNotification(targetUserId, sm.getUserId(), "CERTIFICATION_REJECTED", "USER", targetUserId, "Votre demande de certification bleue n'a pas été retenue.");
-                                    Toasty.info(AdminActivity.this, "Demande refusée", Toasty.LENGTH_SHORT).show();
+                                    Toasty.info(AdminActivity.this, "Demande refusée", Toast.LENGTH_SHORT).show();
                                 }
                             })
                             .show();
@@ -713,6 +756,72 @@ public class AdminActivity extends AppCompatActivity {
                         Toasty.success(AdminActivity.this, chosen.getName() + " est désormais Super Admin (Intérim) 👑", Toasty.LENGTH_SHORT).show();
                         loadUsers();
                     }
+                })
+                .setNegativeButton("Annuler", null)
+                .show();
+    }
+
+    private void showDeleteAccountWithSuccessorDialog(User user) {
+        SessionManager sm = new SessionManager(this);
+        List<User> allUsers = userRepository.getAllUsers();
+        List<User> candidates = new ArrayList<>();
+        for (User u : allUsers) {
+            if (u.getId() != user.getId()) {
+                candidates.add(u);
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Suppression impossible 🚫")
+                    .setMessage("En tant que Super Admin, vous ne pouvez pas supprimer votre compte tant qu'aucun autre utilisateur n'est inscrit dans l'application pour vous succéder.")
+                    .setPositiveButton("OK", null)
+                    .show();
+            return;
+        }
+
+        String[] candidateNames = new String[candidates.size()];
+        for (int i = 0; i < candidates.size(); i++) {
+            User c = candidates.get(i);
+            candidateNames[i] = (c.getName() != null ? c.getName() : c.getEmail()) + " (" + (userRepository.isPrimarySuperAdmin(c.getId()) ? "1er Super Admin" : (userRepository.isSuperAdmin(c.getId()) ? "Super Admin" : (c.isAdmin() ? "Admin" : "Membre"))) + ")";
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("👑 Nommer un successeur Super Admin")
+                .setMessage("Avant de supprimer votre compte de Super Admin, vous devez désigner un successeur :")
+                .setItems(candidateNames, (dialog, which) -> {
+                    User chosen = candidates.get(which);
+                    if (userRepository.isPrimarySuperAdmin(user.getId())) {
+                        userRepository.transferPrimarySuperAdmin(chosen.getId());
+                        Toasty.success(AdminActivity.this, chosen.getName() + " est désormais le nouveau 1er Super Admin 👑", Toasty.LENGTH_LONG).show();
+                    } else {
+                        userRepository.appointSuperAdmin(chosen.getId());
+                        Toasty.success(AdminActivity.this, chosen.getName() + " est désormais Super Admin 👑", Toasty.LENGTH_LONG).show();
+                    }
+                    userRepository.deleteUser(user.getId(), sm.getUserId());
+                    if (user.getId() != -1) {
+                        NotificationRepository notificationRepo = new NotificationRepository(this);
+                        notificationRepo.clearNotificationsForUser(user.getId());
+                    }
+                    sm.logout();
+                    try {
+                        new td.teladoum.baobab.repositories.AuthRepository(this).signOut();
+                    } catch (Exception ignored) {}
+                    try {
+                        com.facebook.login.LoginManager.getInstance().logOut();
+                    } catch (Exception ignored) {}
+                    try {
+                        com.google.android.gms.auth.api.signin.GoogleSignInOptions gso =
+                                new com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
+                                        com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN).build();
+                        com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(this, gso).signOut();
+                    } catch (Exception ignored) {}
+
+                    Toasty.success(AdminActivity.this, "Compte supprimé avec succès", Toasty.LENGTH_SHORT).show();
+                    android.content.Intent intent = new android.content.Intent(AdminActivity.this, LoginActivity.class);
+                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
                 })
                 .setNegativeButton("Annuler", null)
                 .show();
@@ -906,110 +1015,7 @@ public class AdminActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void showPublishVideoDialog() {
-        selectedAdminVideoUri = null;
-        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
-        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-        layout.setPadding(32, 16, 32, 16);
 
-        EditText etTitle = new EditText(this);
-        etTitle.setHint("Titre du film/série/vidéo...");
-
-        EditText etDescription = new EditText(this);
-        etDescription.setHint("Description...");
-
-        Spinner spinnerCategory = new Spinner(this);
-        String[] categories = new String[]{"Films & Séries", "Tutoriels", "Culture", "Divertissement"};
-        android.widget.ArrayAdapter<String> catAdapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, categories);
-        spinnerCategory.setAdapter(catAdapter);
-
-        Button btnPickVideo = new Button(this);
-        btnPickVideo.setText("📁 Choisir une vidéo depuis le téléphone");
-        btnPickVideo.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2E7D32")));
-        btnPickVideo.setTextColor(Color.WHITE);
-
-        EditText etUrl = new EditText(this);
-        etUrl.setHint("Ou coller une URL MP4 distante...");
-        etAdminVideoUrl = etUrl;
-
-        ProgressBar uploadProgress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        uploadProgress.setIndeterminate(true);
-        uploadProgress.setVisibility(View.GONE);
-
-        btnPickVideo.setOnClickListener(v -> videoPickerLauncher.launch("video/*"));
-
-        layout.addView(etTitle);
-        layout.addView(etDescription);
-        layout.addView(spinnerCategory);
-        layout.addView(btnPickVideo);
-        layout.addView(etUrl);
-        layout.addView(uploadProgress);
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Publier un Film / Série / Vidéo 🎥")
-                .setView(layout)
-                .setPositiveButton("Publier", null)
-                .setNegativeButton("Annuler", null)
-                .create();
-
-        dialog.show();
-
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String title = etTitle.getText().toString().trim();
-            String desc = etDescription.getText().toString().trim();
-            String url = etUrl.getText().toString().trim();
-            String category = spinnerCategory.getSelectedItem() != null ? spinnerCategory.getSelectedItem().toString() : "Films & Séries";
-
-            if (selectedAdminVideoUri != null) {
-                uploadProgress.setVisibility(View.VISIBLE);
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-
-                FirebaseHelper.getInstance().uploadMedia("video_contents", selectedAdminVideoUri, new FirebaseHelper.OnUploadCompleteListener() {
-                    @Override
-                    public void onSuccess(String downloadUrl) {
-                        int videoId = Math.abs((title + "_" + System.currentTimeMillis()).hashCode());
-                        VideoModel model = new VideoModel(videoId, title.isEmpty() ? "Vidéo BaobabTD" : title, desc, downloadUrl, category, TimeUtils.getCurrentLocalDateTime());
-                        com.google.firebase.database.FirebaseDatabase.getInstance().getReference("video_contents")
-                                .child(String.valueOf(videoId))
-                                .setValue(model)
-                                .addOnCompleteListener(task -> {
-                                    uploadProgress.setVisibility(View.GONE);
-                                    if (task.isSuccessful()) {
-                                        Toasty.success(AdminActivity.this, "Vidéo téléversée et publiée avec succès ! 🚀", Toasty.LENGTH_SHORT).show();
-                                        dialog.dismiss();
-                                    } else {
-                                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-                                        Toasty.error(AdminActivity.this, "Erreur lors de la publication", Toasty.LENGTH_SHORT).show();
-                                    }
-                                });
-                    }
-
-                    @Override
-                    public void onFailure(Exception e) {
-                        uploadProgress.setVisibility(View.GONE);
-                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-                        Toasty.error(AdminActivity.this, "Erreur de téléversement de la vidéo", Toasty.LENGTH_SHORT).show();
-                    }
-                });
-            } else if (!url.isEmpty()) {
-                int videoId = Math.abs((title + "_" + System.currentTimeMillis()).hashCode());
-                VideoModel model = new VideoModel(videoId, title.isEmpty() ? "Vidéo BaobabTD" : title, desc, url, category, TimeUtils.getCurrentLocalDateTime());
-                com.google.firebase.database.FirebaseDatabase.getInstance().getReference("video_contents")
-                        .child(String.valueOf(videoId))
-                        .setValue(model)
-                        .addOnCompleteListener(task -> {
-                            if (task.isSuccessful()) {
-                                Toasty.success(AdminActivity.this, "Vidéo publiée avec succès ! 🚀", Toasty.LENGTH_SHORT).show();
-                                dialog.dismiss();
-                            } else {
-                                Toasty.error(AdminActivity.this, "Erreur lors de la publication de la vidéo", Toasty.LENGTH_SHORT).show();
-                            }
-                        });
-            } else {
-                Toasty.warning(AdminActivity.this, "Veuillez choisir une vidéo ou saisir une URL", Toasty.LENGTH_SHORT).show();
-            }
-        });
-    }
 
     private interface OnReportActionListener {
         void onDeletePost(PostRepository.ReportItem item);
@@ -1089,11 +1095,13 @@ public class AdminActivity extends AppCompatActivity {
 
     private static class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.ViewHolder> {
         private final List<User> list;
+        private final UserRepository userRepository;
         private final OnUserActionListener listener;
         private boolean showAdminAndLimit = false;
 
-        public UsersAdapter(List<User> list, OnUserActionListener listener) {
+        public UsersAdapter(List<User> list, UserRepository userRepository, OnUserActionListener listener) {
             this.list = list;
+            this.userRepository = userRepository;
             this.listener = listener;
         }
 
@@ -1129,8 +1137,13 @@ public class AdminActivity extends AppCompatActivity {
                 holder.btnSuspendUser.setVisibility(View.VISIBLE);
                 holder.btnDeleteUser.setVisibility(View.VISIBLE);
 
-                if (user.isAdmin()) {
-                    holder.tvUserStatus.setText("🛡️ Admin");
+                if (userRepository != null && userRepository.isSuperAdmin(user.getId())) {
+                    holder.tvUserStatus.setText("👑 Super Admin");
+                    holder.tvUserStatus.setBackgroundColor(Color.parseColor("#FFF8E1"));
+                    holder.tvUserStatus.setTextColor(Color.parseColor("#F57F17"));
+                    holder.btnToggleAdmin.setText("Rétrograder");
+                } else if (user.isAdmin()) {
+                    holder.tvUserStatus.setText("🛡️ Admin Simple");
                     holder.tvUserStatus.setBackgroundColor(Color.parseColor("#E3F2FD"));
                     holder.tvUserStatus.setTextColor(Color.parseColor("#1565C0"));
                     holder.btnToggleAdmin.setText("Rétrograder");
@@ -1203,6 +1216,88 @@ public class AdminActivity extends AppCompatActivity {
                 btnToggleAdmin = itemView.findViewById(R.id.btnToggleAdmin);
             }
         }
+    }
+
+    private void showManageBlueBadgesDialog() {
+        String[] choices = {
+            "📋 Voir les demandes de certification en attente",
+            "🌟 Gérer / Retirer le badge bleu des utilisateurs certifiés"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("Gestion des Badges Bleus 🛡️")
+                .setItems(choices, (dialog, which) -> {
+                    if (which == 0) {
+                        loadCertificationRequestsAndShow();
+                    } else if (which == 1) {
+                        showVerifiedUsersDialog();
+                    }
+                })
+                .show();
+    }
+
+    private void loadCertificationRequestsAndShow() {
+        com.google.firebase.database.FirebaseDatabase.getInstance().getReference("certification_requests")
+                .addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull com.google.firebase.database.DataSnapshot snapshot) {
+                        List<java.util.Map<String, Object>> requests = new ArrayList<>();
+                        for (com.google.firebase.database.DataSnapshot snap : snapshot.getChildren()) {
+                            try {
+                                java.util.Map<String, Object> map = (java.util.Map<String, Object>) snap.getValue();
+                                if (map != null) requests.add(map);
+                            } catch (Exception ignored) {}
+                        }
+                        if (requests.isEmpty()) {
+                            Toasty.info(AdminActivity.this, "Aucune demande de certification en attente", Toasty.LENGTH_SHORT).show();
+                        } else {
+                            showCertificationReviewDialog(requests);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull com.google.firebase.database.DatabaseError error) {
+                        Toasty.error(AdminActivity.this, "Erreur de chargement des demandes", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void showVerifiedUsersDialog() {
+        List<User> allUsers = userRepository.getAllUsers();
+        List<User> verifiedUsers = new ArrayList<>();
+        for (User u : allUsers) {
+            if (u.isVerified()) {
+                verifiedUsers.add(u);
+            }
+        }
+
+        if (verifiedUsers.isEmpty()) {
+            Toasty.info(this, "Aucun utilisateur certifié (badge bleu) actuellement", Toasty.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] names = new String[verifiedUsers.size()];
+        for (int i = 0; i < verifiedUsers.size(); i++) {
+            User u = verifiedUsers.get(i);
+            names[i] = "🌟 " + (u.getName() != null ? u.getName() : "Utilisateur") + " (" + u.getEmail() + ")";
+        }
+
+        SessionManager sm = new SessionManager(this);
+        new AlertDialog.Builder(this)
+                .setTitle("Utilisateurs certifiés (" + verifiedUsers.size() + ")")
+                .setItems(names, (dialog, which) -> {
+                    User target = verifiedUsers.get(which);
+                    new AlertDialog.Builder(this)
+                            .setTitle("Retirer le badge bleu ⚠️")
+                            .setMessage("Voulez-vous vraiment retirer le badge bleu de certification à " + target.getName() + " ?")
+                            .setPositiveButton("Retirer le badge", (d, w) -> {
+                                userRepository.setUserVerified(target.getId(), false);
+                                notificationRepository.addNotification(target.getId(), sm.getUserId(), "CERTIFICATION_REVOKED", "USER", target.getId(), "Votre badge bleu de certification a été retiré par un administrateur.");
+                                Toasty.success(AdminActivity.this, "Badge bleu retiré pour " + target.getName(), Toasty.LENGTH_SHORT).show();
+                            })
+                            .setNegativeButton("Annuler", null)
+                            .show();
+                })
+                .show();
     }
 }
 

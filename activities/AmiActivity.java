@@ -16,6 +16,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -43,6 +45,8 @@ public class AmiActivity extends AppCompatActivity {
     private EditText etSearchFriend;
     private TextView tvHeaderRequests;
     private RecyclerView rvPendingRequests;
+    private TextView tvHeaderSentRequests;
+    private RecyclerView rvSentRequests;
     private TextView tvHeaderSuggestions;
     private RecyclerView rvSuggestions;
     private RecyclerView rvFriendsList;
@@ -53,10 +57,12 @@ public class AmiActivity extends AppCompatActivity {
     private SessionManager sessionManager;
 
     private PendingRequestsAdapter requestsAdapter;
+    private SentRequestsAdapter sentRequestsAdapter;
     private FriendsListAdapter friendsAdapter;
     private SuggestionsAdapter suggestionsAdapter;
 
     private final List<FriendRepository.FriendRequestItem> requestsList = new ArrayList<>();
+    private final List<FriendRepository.FriendRequestItem> sentRequestsList = new ArrayList<>();
     private final List<User> friendsList = new ArrayList<>();
     private final List<FriendRepository.UserSearchItem> suggestionsList = new ArrayList<>();
 
@@ -64,8 +70,30 @@ public class AmiActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ami);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                v.setPadding(0, statusBarInsets.top, 0, navBarInsets.bottom);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         Toolbar toolbar = findViewById(R.id.toolbarAmi);
         setSupportActionBar(toolbar);
@@ -78,6 +106,8 @@ public class AmiActivity extends AppCompatActivity {
         userRepository = new UserRepository(this);
         sessionManager = new SessionManager(this);
         currentUserId = sessionManager.getUserId();
+
+        td.teladoum.baobab.helpers.BottomNavigationHelper.setupBottomNavigation(this, td.teladoum.baobab.helpers.BottomNavigationHelper.TAB_FRIENDS);
 
         initViews();
         setupRecyclerViews();
@@ -111,6 +141,8 @@ public class AmiActivity extends AppCompatActivity {
         etSearchFriend = findViewById(R.id.etSearchFriend);
         tvHeaderRequests = findViewById(R.id.tvHeaderRequests);
         rvPendingRequests = findViewById(R.id.rvPendingRequests);
+        tvHeaderSentRequests = findViewById(R.id.tvHeaderSentRequests);
+        rvSentRequests = findViewById(R.id.rvSentRequests);
         tvHeaderSuggestions = findViewById(R.id.tvHeaderSuggestions);
         rvSuggestions = findViewById(R.id.rvSuggestions);
         rvFriendsList = findViewById(R.id.rvFriendsList);
@@ -152,9 +184,27 @@ public class AmiActivity extends AppCompatActivity {
         });
         rvPendingRequests.setAdapter(requestsAdapter);
 
+        rvSentRequests.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        rvSentRequests.setHasFixedSize(true);
+        sentRequestsAdapter = new SentRequestsAdapter(sentRequestsList, item -> {
+            boolean canceled = friendRepository.cancelFriendRequest(currentUserId, item.receiverId);
+            if (canceled) {
+                Toasty.info(AmiActivity.this, "Demande annulée", Toasty.LENGTH_SHORT).show();
+                loadData();
+            } else {
+                Toasty.error(AmiActivity.this, "Erreur d'annulation", Toasty.LENGTH_SHORT).show();
+            }
+        });
+        rvSentRequests.setAdapter(sentRequestsAdapter);
+
         rvFriendsList.setLayoutManager(new LinearLayoutManager(this));
         rvFriendsList.setHasFixedSize(true);
         friendsAdapter = new FriendsListAdapter(friendsList, new OnFriendActionListener() {
+            @Override
+            public void onMessage(User friend) {
+                openChatWithUser(friend.getId(), friend.getName(), friend.getProfileImage());
+            }
+
             @Override
             public void onRemoveFriend(User friend) {
                 new AlertDialog.Builder(AmiActivity.this)
@@ -168,6 +218,21 @@ public class AmiActivity extends AppCompatActivity {
                             } else {
                                 Toasty.error(AmiActivity.this, "Erreur de suppression", Toasty.LENGTH_SHORT).show();
                             }
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            }
+
+            @Override
+            public void onBlockUser(User friend) {
+                new AlertDialog.Builder(AmiActivity.this)
+                        .setTitle("Bloquer l'utilisateur 🚫")
+                        .setMessage("Voulez-vous vraiment bloquer " + friend.getName() + " ? Vous ne pourrez plus communiquer.")
+                        .setPositiveButton("Bloquer", (dialog, which) -> {
+                            userRepository.blockUser(currentUserId, friend.getId());
+                            friendRepository.removeFriend(currentUserId, friend.getId());
+                            Toasty.success(AmiActivity.this, "Utilisateur bloqué", Toasty.LENGTH_SHORT).show();
+                            loadData();
                         })
                         .setNegativeButton("Annuler", null)
                         .show();
@@ -206,16 +271,41 @@ public class AmiActivity extends AppCompatActivity {
     }
 
     private void loadData() {
+        // Load local data instantly first for zero-latency UI response
+        loadPendingRequests();
+        loadSentRequests();
+        loadSuggestions();
+        loadFriends(etSearchFriend.getText().toString());
+
+        // Sync from cloud in the background asynchronously
         if (userRepository != null) {
-            userRepository.syncAllUsersFromCloud(() -> {
-                loadPendingRequests();
-                loadSuggestions();
-                loadFriends(etSearchFriend.getText().toString());
-            });
+            new Thread(() -> {
+                userRepository.syncAllUsersFromCloud(() -> {
+                    runOnUiThread(() -> {
+                        loadPendingRequests();
+                        loadSentRequests();
+                        loadSuggestions();
+                        loadFriends(etSearchFriend.getText().toString());
+                    });
+                });
+            }).start();
+        }
+    }
+
+    private void loadSentRequests() {
+        List<FriendRepository.FriendRequestItem> sent = friendRepository.getSentRequests(currentUserId);
+        sentRequestsList.clear();
+        sentRequestsList.addAll(sent);
+        if (sentRequestsAdapter != null) {
+            sentRequestsAdapter.notifyDataSetChanged();
+        }
+
+        if (sent.isEmpty()) {
+            if (tvHeaderSentRequests != null) tvHeaderSentRequests.setVisibility(View.GONE);
+            if (rvSentRequests != null) rvSentRequests.setVisibility(View.GONE);
         } else {
-            loadPendingRequests();
-            loadSuggestions();
-            loadFriends(etSearchFriend.getText().toString());
+            if (tvHeaderSentRequests != null) tvHeaderSentRequests.setVisibility(View.VISIBLE);
+            if (rvSentRequests != null) rvSentRequests.setVisibility(View.VISIBLE);
         }
     }
 
@@ -273,8 +363,14 @@ public class AmiActivity extends AppCompatActivity {
         void onDecline(FriendRepository.FriendRequestItem item);
     }
 
+    private interface OnSentRequestActionListener {
+        void onCancel(FriendRepository.FriendRequestItem item);
+    }
+
     private interface OnFriendActionListener {
+        void onMessage(User friend);
         void onRemoveFriend(User friend);
+        void onBlockUser(User friend);
     }
 
     private static class PendingRequestsAdapter extends RecyclerView.Adapter<PendingRequestsAdapter.ViewHolder> {
@@ -300,11 +396,7 @@ public class AmiActivity extends AppCompatActivity {
             ImageUtils.loadProfileImage(holder.itemView.getContext(), item.senderProfileImage, holder.imgFriendAvatar);
 
             View.OnClickListener profileClickListener = v -> {
-                Intent intent = new Intent(v.getContext(), PageUtilisateurActivity.class);
-                intent.putExtra("user_id", item.senderId);
-                intent.putExtra("user_name", item.senderName);
-                intent.putExtra("user_profile_image", item.senderProfileImage);
-                v.getContext().startActivity(intent);
+                td.teladoum.baobab.utils.NavigationHelper.openUserProfile(v.getContext(), item.senderId);
             };
 
             holder.imgFriendAvatar.setOnClickListener(profileClickListener);
@@ -343,6 +435,73 @@ public class AmiActivity extends AppCompatActivity {
         }
     }
 
+    private static class SentRequestsAdapter extends RecyclerView.Adapter<SentRequestsAdapter.ViewHolder> {
+        private final List<FriendRepository.FriendRequestItem> list;
+        private final OnSentRequestActionListener listener;
+
+        public SentRequestsAdapter(List<FriendRepository.FriendRequestItem> list, OnSentRequestActionListener listener) {
+            this.list = list;
+            this.listener = listener;
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_friend_suggestion_card, parent, false);
+            return new ViewHolder(v);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            FriendRepository.FriendRequestItem item = list.get(position);
+            UserRepository uRepo = new UserRepository(holder.itemView.getContext());
+            User receiverUser = uRepo.getUserById(item.receiverId);
+            String name = receiverUser != null && receiverUser.getName() != null ? receiverUser.getName() : "Utilisateur";
+            String avatar = receiverUser != null ? receiverUser.getProfileImage() : null;
+
+            holder.tvUserSearchName.setText(name);
+            ImageUtils.loadProfileImage(holder.itemView.getContext(), avatar, holder.imgUserSearchAvatar);
+
+            View.OnClickListener profileClickListener = v -> {
+                td.teladoum.baobab.utils.NavigationHelper.openUserProfile(v.getContext(), item.receiverId);
+            };
+
+            holder.imgUserSearchAvatar.setOnClickListener(profileClickListener);
+            holder.tvUserSearchName.setOnClickListener(profileClickListener);
+
+            holder.btnAddFriend.setText("Annuler");
+            holder.btnAddFriend.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#B71C1C")));
+            holder.btnAddFriend.setTextColor(android.graphics.Color.WHITE);
+            holder.btnAddFriend.setOnClickListener(v -> {
+                if (listener != null) listener.onCancel(item);
+            });
+
+            if (holder.btnCancelRequest != null) {
+                holder.btnCancelRequest.setVisibility(View.GONE);
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return list.size();
+        }
+
+        static class ViewHolder extends RecyclerView.ViewHolder {
+            ImageView imgUserSearchAvatar;
+            TextView tvUserSearchName;
+            Button btnAddFriend;
+            Button btnCancelRequest;
+
+            public ViewHolder(@NonNull View itemView) {
+                super(itemView);
+                imgUserSearchAvatar = itemView.findViewById(R.id.imgUserSearchAvatar);
+                tvUserSearchName = itemView.findViewById(R.id.tvUserSearchName);
+                btnAddFriend = itemView.findViewById(R.id.btnAddFriend);
+                btnCancelRequest = itemView.findViewById(R.id.btnCancelRequest);
+            }
+        }
+    }
+
     private static class FriendsListAdapter extends RecyclerView.Adapter<FriendsListAdapter.ViewHolder> {
         private final List<User> list;
         private final OnFriendActionListener listener;
@@ -366,11 +525,7 @@ public class AmiActivity extends AppCompatActivity {
             ImageUtils.loadProfileImage(holder.itemView.getContext(), user.getProfileImage(), holder.imgFriendAvatar);
 
             View.OnClickListener profileClickListener = v -> {
-                Intent intent = new Intent(v.getContext(), PageUtilisateurActivity.class);
-                intent.putExtra("user_id", user.getId());
-                intent.putExtra("user_name", user.getName());
-                intent.putExtra("user_profile_image", user.getProfileImage());
-                v.getContext().startActivity(intent);
+                td.teladoum.baobab.utils.NavigationHelper.openUserProfile(v.getContext(), user.getId());
             };
 
             holder.imgFriendAvatar.setOnClickListener(profileClickListener);
@@ -379,9 +534,25 @@ public class AmiActivity extends AppCompatActivity {
             holder.btnAccept.setVisibility(View.GONE);
             holder.btnDecline.setVisibility(View.GONE);
             holder.btnRemoveFriend.setVisibility(View.VISIBLE);
+            holder.btnRemoveFriend.setText("Message");
 
             holder.btnRemoveFriend.setOnClickListener(v -> {
-                if (listener != null) listener.onRemoveFriend(user);
+                if (listener != null) listener.onMessage(user);
+            });
+
+            holder.itemView.setOnLongClickListener(v -> {
+                String[] options = new String[]{"🗑️ Retirer de la liste d'amis", "🚫 Bloquer l'utilisateur", "❌ Annuler"};
+                new AlertDialog.Builder(v.getContext())
+                        .setTitle("Options de l'ami")
+                        .setItems(options, (dialog, which) -> {
+                            if (which == 0) {
+                                if (listener != null) listener.onRemoveFriend(user);
+                            } else if (which == 1) {
+                                if (listener != null) listener.onBlockUser(user);
+                            }
+                        })
+                        .show();
+                return true;
             });
         }
 
@@ -443,11 +614,7 @@ public class AmiActivity extends AppCompatActivity {
             ImageUtils.loadProfileImage(holder.itemView.getContext(), avatarUrl, holder.imgUserSearchAvatar);
 
             View.OnClickListener profileClickListener = v -> {
-                Intent intent = new Intent(v.getContext(), PageUtilisateurActivity.class);
-                intent.putExtra("user_id", item.userId);
-                intent.putExtra("user_name", item.name);
-                intent.putExtra("user_profile_image", item.profileImage);
-                v.getContext().startActivity(intent);
+                td.teladoum.baobab.utils.NavigationHelper.openUserProfile(v.getContext(), item.userId);
             };
 
             holder.imgUserSearchAvatar.setOnClickListener(profileClickListener);

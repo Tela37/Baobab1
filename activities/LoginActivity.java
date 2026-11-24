@@ -18,6 +18,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import java.util.Locale;
 
@@ -62,6 +64,7 @@ public class LoginActivity extends AppCompatActivity {
     private TextView tvRegister, tvForgotPassword;
     private ProgressBar progressBar;
 
+    private td.teladoum.baobab.viewmodels.LoginViewModel loginViewModel;
     private UserRepository userRepository;
     private SessionManager sessionManager;
 
@@ -85,6 +88,13 @@ public class LoginActivity extends AppCompatActivity {
         androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
 
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
+
         SharedPreferences prefs = getSharedPreferences("MessagesSession", MODE_PRIVATE);
         boolean darkMode = prefs.getBoolean("dark_mode", false);
         int targetMode = darkMode ? androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES : androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO;
@@ -93,6 +103,22 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_login);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                androidx.core.graphics.Insets imeInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime());
+                int bottomInset = Math.max(navBarInsets.bottom, imeInsets.bottom);
+                v.setPadding(0, statusBarInsets.top, 0, bottomInset);
+                return insets;
+            });
+        }
 
         TextView btnLangFrench = findViewById(R.id.btnLangFrench);
         TextView btnLangEnglish = findViewById(R.id.btnLangEnglish);
@@ -127,6 +153,17 @@ public class LoginActivity extends AppCompatActivity {
         tvRegister = findViewById(R.id.tvRegister);
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         progressBar = findViewById(R.id.progressBar);
+
+        loginViewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.LoginViewModel.class);
+        loginViewModel.getIsLoadingLiveData().observe(this, isLoading -> {
+            if (progressBar != null) progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+            if (btnLogin != null) btnLogin.setEnabled(!isLoading);
+        });
+        loginViewModel.getErrorMessageLiveData().observe(this, msg -> {
+            if (msg != null && !msg.isEmpty()) {
+                Toasty.error(this, msg, Toasty.LENGTH_SHORT).show();
+            }
+        });
 
         userRepository = new UserRepository(this);
         sessionManager = new SessionManager(this);
@@ -448,67 +485,71 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setupFacebookLogin() {
-        if (btnFacebookLogin != null) {
-            btnFacebookLogin.setVisibility(View.GONE);
-        }
-        callbackManager = CallbackManager.Factory.create();
-        if (btnFacebookLogin == null) return;
-        btnFacebookLogin.setPermissions(Arrays.asList("email", "public_profile"));
+        try {
+            if (btnFacebookLogin != null) {
+                btnFacebookLogin.setVisibility(View.VISIBLE);
+            }
+            callbackManager = CallbackManager.Factory.create();
+            if (btnFacebookLogin == null) return;
+            btnFacebookLogin.setPermissions(Arrays.asList("email", "public_profile"));
 
-        btnFacebookLogin.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
-            @Override
-            public void onSuccess(LoginResult loginResult) {
-                GraphRequest request = GraphRequest.newMeRequest(
-                        loginResult.getAccessToken(),
-                        (object, response) -> {
-                            try {
-                                String email = null;
-                                String name = "Utilisateur Facebook";
-                                String photoUrl = null;
+            btnFacebookLogin.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
+                @Override
+                public void onSuccess(LoginResult loginResult) {
+                    GraphRequest request = GraphRequest.newMeRequest(
+                            loginResult.getAccessToken(),
+                            (object, response) -> {
+                                try {
+                                    String email = null;
+                                    String name = "Utilisateur Facebook";
+                                    String photoUrl = null;
 
-                                if (object != null) {
-                                    if (object.has("email")) {
-                                        email = object.getString("email");
-                                    }
-                                    if (object.has("name")) {
-                                        name = object.getString("name");
-                                    }
-                                    if (object.has("picture")) {
-                                        JSONObject pictureData = object.getJSONObject("picture").optJSONObject("data");
-                                        if (pictureData != null && pictureData.has("url")) {
-                                            photoUrl = pictureData.getString("url");
+                                    if (object != null) {
+                                        if (object.has("email")) {
+                                            email = object.getString("email");
+                                        }
+                                        if (object.has("name")) {
+                                            name = object.getString("name");
+                                        }
+                                        if (object.has("picture")) {
+                                            JSONObject pictureData = object.getJSONObject("picture").optJSONObject("data");
+                                            if (pictureData != null && pictureData.has("url")) {
+                                                photoUrl = pictureData.getString("url");
+                                            }
                                         }
                                     }
+
+                                    if (email == null || email.isEmpty()) {
+                                        email = "fb_" + loginResult.getAccessToken().getUserId() + "@facebook.com";
+                                    }
+
+                                    onSocialLoginSuccess(email, name, photoUrl);
+
+                                } catch (Exception e) {
+                                    Toast.makeText(LoginActivity.this, "Erreur de traitement profil Facebook", Toast.LENGTH_SHORT).show();
                                 }
-
-                                if (email == null || email.isEmpty()) {
-                                    email = "fb_" + loginResult.getAccessToken().getUserId() + "@facebook.com";
-                                }
-
-                                onSocialLoginSuccess(email, name, photoUrl);
-
-                            } catch (Exception e) {
-                                Toast.makeText(LoginActivity.this, "Erreur de traitement profil Facebook", Toast.LENGTH_SHORT).show();
                             }
-                        }
-                );
+                    );
 
-                Bundle parameters = new Bundle();
-                parameters.putString("fields", "id,name,email,picture.type(large)");
-                request.setParameters(parameters);
-                request.executeAsync();
-            }
+                    Bundle parameters = new Bundle();
+                    parameters.putString("fields", "id,name,email,picture.type(large)");
+                    request.setParameters(parameters);
+                    request.executeAsync();
+                }
 
-            @Override
-            public void onCancel() {
-                Toasty.warning(LoginActivity.this, "Connexion Facebook annulée", Toasty.LENGTH_SHORT).show();
-            }
+                @Override
+                public void onCancel() {
+                    Toasty.warning(LoginActivity.this, "Connexion Facebook annulée", Toasty.LENGTH_SHORT).show();
+                }
 
-            @Override
-            public void onError(FacebookException error) {
-                Toasty.error(LoginActivity.this, "Erreur Facebook: " + error.getMessage(), Toasty.LENGTH_SHORT).show();
-            }
-        });
+                @Override
+                public void onError(FacebookException error) {
+                    Toasty.error(LoginActivity.this, "Erreur Facebook: " + error.getMessage(), Toasty.LENGTH_SHORT).show();
+                }
+            });
+        } catch (Exception e) {
+            android.util.Log.e("LoginActivity", "Facebook SDK setup error: " + e.getMessage());
+        }
     }
 
     private void changeLanguage(String langCode) {

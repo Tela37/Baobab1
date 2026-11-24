@@ -10,6 +10,7 @@ public class Post {
 
     private int id;
     private int userId;
+    private int targetUserId;
     private String authorName;
     private String authorProfileImage;
     private String content;
@@ -69,6 +70,7 @@ public class Post {
         return authorName;
     }
 
+    @Exclude
     public String getAuthor_name() {
         return authorName;
     }
@@ -77,6 +79,7 @@ public class Post {
         return authorProfileImage;
     }
 
+    @Exclude
     public String getAuthor_profile_image() {
         return authorProfileImage;
     }
@@ -89,6 +92,7 @@ public class Post {
         return imagePath;
     }
 
+    @Exclude
     public java.util.List<String> getImageList() {
         java.util.List<String> list = new java.util.ArrayList<>();
         if (imagePath != null && !imagePath.trim().isEmpty()) {
@@ -294,5 +298,24 @@ public class Post {
      */
     public void setUserVotedOption(int userVotedOption) {
         this.userVotedOption = userVotedOption;
+    }
+
+    public int getTargetUserId() {
+        return targetUserId;
+    }
+
+    public void setTargetUserId(int targetUserId) {
+        this.targetUserId = targetUserId;
+    }
+
+    @Exclude
+    public int getTarget_user_id() {
+        return targetUserId;
+    }
+
+    public void setTarget_user_id(int target_user_id) {
+        if (this.targetUserId == 0) {
+            this.targetUserId = target_user_id;
+        }
     }
 }

@@ -8,6 +8,10 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
+import td.teladoum.baobab.helpers.DialogUtils;
 
 import td.teladoum.baobab.R;
 import td.teladoum.baobab.models.User;
@@ -29,14 +33,39 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView telephoneProfileAct, tvProfileNeighborhood, tvProfileCity, tvProfileCountry;
     private Button btnOpenProfileUpdate, publicationBtnProfilAct, amiBtnProfilAct, blocageBtnProfil;
 
+    private td.teladoum.baobab.viewmodels.ProfileViewModel profileViewModel;
     private UserRepository userRepository;
     private SessionManager sessionManager;
     private int currentUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                androidx.core.graphics.Insets imeInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime());
+                int bottomInset = Math.max(navBarInsets.bottom, imeInsets.bottom);
+                v.setPadding(0, statusBarInsets.top, 0, bottomInset);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
        Toolbar toolbar = findViewById(R.id.toolbarProfile);
         setSupportActionBar(toolbar);
@@ -48,8 +77,28 @@ public class ProfileActivity extends AppCompatActivity {
         sessionManager = new SessionManager(this);
         currentUserId = sessionManager.getUserId();
 
+        td.teladoum.baobab.helpers.BottomNavigationHelper.setupBottomNavigation(this, td.teladoum.baobab.helpers.BottomNavigationHelper.TAB_PROFILE);
+
+        profileViewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.ProfileViewModel.class);
+        profileViewModel.getUserLiveData().observe(this, user -> {
+            if (user != null) {
+                displayUserData(user);
+            }
+        });
+        profileViewModel.getPostsCountLiveData().observe(this, postsCount -> {
+            if (publicationBtnProfilAct != null && postsCount != null) {
+                publicationBtnProfilAct.setText("Publications (" + postsCount + ")");
+            }
+        });
+        profileViewModel.getFriendsCountLiveData().observe(this, friendsCount -> {
+            if (amiBtnProfilAct != null && friendsCount != null) {
+                amiBtnProfilAct.setText("Ami(e)s (" + friendsCount + ")");
+            }
+        });
+
         initViews();
         loadUserData();
+        profileViewModel.loadUserProfile(currentUserId, currentUserId);
 
         imgProfileAvatar.setOnClickListener(v -> {
             User user = userRepository.getUserById(currentUserId);
@@ -77,11 +126,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         if (ibClose != null) {
             ibClose.bringToFront();
-            ibClose.setOnClickListener(v -> {
-                if (dialog.isShowing()) {
-                    dialog.dismiss();
-                }
-            });
+            ibClose.setOnClickListener(v -> DialogUtils.safeDismiss(dialog));
         }
 
         dialog.show();
@@ -109,7 +154,7 @@ public class ProfileActivity extends AppCompatActivity {
             btnOpenProfileUpdate.setOnClickListener(v -> startActivity(new Intent(ProfileActivity.this, Mise_a_jour_Activity.class)));
         }
         if (publicationBtnProfilAct != null) {
-            publicationBtnProfilAct.setOnClickListener(v -> startActivity(new Intent(ProfileActivity.this, MesPublicationActivity.class)));
+            publicationBtnProfilAct.setOnClickListener(v -> startActivity(new Intent(ProfileActivity.this, PagePersonnelleActivity.class)));
         }
         if (amiBtnProfilAct != null) {
             amiBtnProfilAct.setOnClickListener(v -> startActivity(new Intent(ProfileActivity.this, AmiActivity.class)));

@@ -16,6 +16,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -49,8 +51,30 @@ public class TrouverAmisActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_trouver_amis);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                v.setPadding(0, statusBarInsets.top, 0, navBarInsets.bottom);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         Toolbar toolbar = findViewById(R.id.toolbarTrouverAmis);
         setSupportActionBar(toolbar);
@@ -205,9 +229,7 @@ public class TrouverAmisActivity extends AppCompatActivity {
                                         intent.putExtra("is_outgoing", true);
                                         startActivity(intent);
                                     } else if (whichAction == 2) {
-                                        Intent intent = new Intent(TrouverAmisActivity.this, PageUtilisateurActivity.class);
-                                        intent.putExtra("user_id", u.getId());
-                                        startActivity(intent);
+                                        td.teladoum.baobab.utils.NavigationHelper.openUserProfile(TrouverAmisActivity.this, u.getId());
                                     } else if (whichAction == 3) {
                                         friendRepository.sendFriendRequest(currentUserId, u.getId());
                                         Toasty.success(TrouverAmisActivity.this, "Invitation envoyée à " + u.getName(), Toasty.LENGTH_SHORT).show();
@@ -287,11 +309,7 @@ public class TrouverAmisActivity extends AppCompatActivity {
             ImageUtils.loadProfileImage(holder.itemView.getContext(), avatarUrl, holder.imgUserSearchAvatar);
 
             View.OnClickListener profileClickListener = v -> {
-                Intent intent = new Intent(v.getContext(), PageUtilisateurActivity.class);
-                intent.putExtra("user_id", item.userId);
-                intent.putExtra("user_name", item.name);
-                intent.putExtra("user_profile_image", item.profileImage);
-                v.getContext().startActivity(intent);
+                td.teladoum.baobab.utils.NavigationHelper.openUserProfile(v.getContext(), item.userId);
             };
 
             holder.imgUserSearchAvatar.setOnClickListener(profileClickListener);

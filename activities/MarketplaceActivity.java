@@ -3,12 +3,17 @@ package td.teladoum.baobab.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
@@ -29,7 +34,7 @@ import td.teladoum.baobab.repositories.MarketplaceRepository;
  */
 public class MarketplaceActivity extends AppCompatActivity {
 
-    private MarketplaceRepository repository;
+    private td.teladoum.baobab.viewmodels.MarketplaceViewModel viewModel;
     private MarketplaceAdapter adapter;
     private final List<MarketplaceItem> fullItemList = new ArrayList<>();
     private final List<MarketplaceItem> displayedItemList = new ArrayList<>();
@@ -40,10 +45,35 @@ public class MarketplaceActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_marketplace);
 
-        repository = new MarketplaceRepository(this);
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                v.setPadding(0, statusBarInsets.top, 0, navBarInsets.bottom);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
+
+        td.teladoum.baobab.helpers.BottomNavigationHelper.setupBottomNavigation(this, td.teladoum.baobab.helpers.BottomNavigationHelper.TAB_MARKETPLACE);
+
+        viewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.MarketplaceViewModel.class);
+        setupViewModelObservers();
 
         Toolbar toolbar = findViewById(R.id.toolbarMarketplace);
         setSupportActionBar(toolbar);
@@ -58,7 +88,7 @@ public class MarketplaceActivity extends AppCompatActivity {
         RecyclerView rvMarketplace = findViewById(R.id.rvMarketplace);
         rvMarketplace.setLayoutManager(new GridLayoutManager(this, 2));
 
-        adapter = new MarketplaceAdapter(displayedItemList, item -> {
+        adapter = new MarketplaceAdapter(new ArrayList<>(), item -> {
             Intent intent = new Intent(MarketplaceActivity.this, MarketplaceDetailActivity.class);
             intent.putExtra("item_id", item.getId());
             intent.putExtra("title", item.getTitle());
@@ -70,8 +100,10 @@ public class MarketplaceActivity extends AppCompatActivity {
             intent.putExtra("seller_phone", item.getSellerPhone());
             intent.putExtra("seller_id", item.getUserId());
             intent.putExtra("image_path", item.getImagePath());
+            intent.putExtra("views_count", item.getViewsCount());
             startActivity(intent);
         });
+
         rvMarketplace.setAdapter(adapter);
 
         swipeRefreshLayout = findViewById(R.id.swipeMarketplace);
@@ -104,10 +136,64 @@ public class MarketplaceActivity extends AppCompatActivity {
                 Intent intent = new Intent(MarketplaceActivity.this, PublishMarketplaceActivity.class);
                 startActivity(intent);
             });
+
+            fabPublish.setOnTouchListener(new View.OnTouchListener() {
+                private float dX, dY;
+                private float startX, startY;
+                private long startTime;
+
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    switch (event.getActionMasked()) {
+                        case MotionEvent.ACTION_DOWN:
+                            dX = v.getX() - event.getRawX();
+                            dY = v.getY() - event.getRawY();
+                            startX = event.getRawX();
+                            startY = event.getRawY();
+                            startTime = System.currentTimeMillis();
+                            return true;
+
+                        case MotionEvent.ACTION_MOVE:
+                            float newX = event.getRawX() + dX;
+                            float newY = event.getRawY() + dY;
+
+                            View parent = (View) v.getParent();
+                            if (parent != null) {
+                                float maxX = parent.getWidth() - v.getWidth();
+                                float maxY = parent.getHeight() - v.getHeight();
+                                newX = Math.max(0, Math.min(newX, maxX));
+                                newY = Math.max(0, Math.min(newY, maxY));
+                            }
+
+                            v.animate()
+                                    .x(newX)
+                                    .y(newY)
+                                    .setDuration(0)
+                                    .start();
+                            return true;
+
+                        case MotionEvent.ACTION_UP:
+                            float deltaX = Math.abs(event.getRawX() - startX);
+                            float deltaY = Math.abs(event.getRawY() - startY);
+                            if (deltaX < 15 && deltaY < 15 && (System.currentTimeMillis() - startTime) < 250) {
+                                v.performClick();
+                            }
+                            return true;
+                    }
+                    return false;
+                }
+            });
         }
 
         loadLocalItems();
         loadItemsFromCloud();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadLocalItems();
+        td.teladoum.baobab.helpers.BottomNavigationHelper.setupBottomNavigation(this, td.teladoum.baobab.helpers.BottomNavigationHelper.TAB_MARKETPLACE);
     }
 
     private void setupTabs(TabLayout tabLayout) {
@@ -129,6 +215,7 @@ public class MarketplaceActivity extends AppCompatActivity {
                     case 4: currentCategory = "EMPLOI"; break;
                     default: currentCategory = "TOUT"; break;
                 }
+                loadLocalItems();
                 applyFilters();
             }
 
@@ -140,20 +227,28 @@ public class MarketplaceActivity extends AppCompatActivity {
         });
     }
 
+    private void setupViewModelObservers() {
+        if (viewModel == null) return;
+
+        viewModel.getItemsLiveData().observe(this, items -> {
+            fullItemList.clear();
+            if (items != null) fullItemList.addAll(items);
+            applyFilters();
+        });
+
+        viewModel.getIsLoadingLiveData().observe(this, isLoading -> {
+            if (swipeRefreshLayout != null) {
+                swipeRefreshLayout.setRefreshing(Boolean.TRUE.equals(isLoading));
+            }
+        });
+    }
+
     private void loadLocalItems() {
-        List<MarketplaceItem> localItems = repository.getAllItems();
-        fullItemList.clear();
-        fullItemList.addAll(localItems);
-        applyFilters();
+        viewModel.loadMarketplaceItems(currentCategory);
     }
 
     private void loadItemsFromCloud() {
-        repository.syncFromCloud(() -> {
-            loadLocalItems();
-            if (swipeRefreshLayout != null) {
-                swipeRefreshLayout.setRefreshing(false);
-            }
-        });
+        viewModel.loadMarketplaceItems(currentCategory);
     }
 
     private void applyFilters() {
@@ -172,9 +267,7 @@ public class MarketplaceActivity extends AppCompatActivity {
             }
         }
 
-        displayedItemList.clear();
-        displayedItemList.addAll(filtered);
-        adapter.updateItems(displayedItemList);
+        adapter.updateItems(filtered);
     }
 
     @Override

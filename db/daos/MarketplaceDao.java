@@ -12,10 +12,10 @@ import td.teladoum.baobab.db.entities.MarketplaceEntity;
 @Dao
 public interface MarketplaceDao {
 
-    @Query("SELECT * FROM marketplace WHERE isAvailable = 1 ORDER BY id DESC")
+    @Query("SELECT * FROM marketplace ORDER BY id DESC")
     List<MarketplaceEntity> getAllItems();
 
-    @Query("SELECT * FROM marketplace WHERE category = :category AND isAvailable = 1 ORDER BY id DESC")
+    @Query("SELECT * FROM marketplace WHERE category = :category ORDER BY id DESC")
     List<MarketplaceEntity> getItemsByCategory(String category);
 
     @Query("SELECT * FROM marketplace WHERE id = :id LIMIT 1")

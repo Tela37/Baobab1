@@ -2,6 +2,7 @@ package td.teladoum.baobab.adapters;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,7 +23,7 @@ import java.util.Locale;
 import td.teladoum.baobab.R;
 import td.teladoum.baobab.activities.AcceuilActivity;
 import td.teladoum.baobab.activities.CommenterActivity;
-import td.teladoum.baobab.activities.PageUtilisateurActivity;
+import td.teladoum.baobab.activities.User2PageActivity;
 import td.teladoum.baobab.helpers.GeminiHelper;
 import td.teladoum.baobab.models.Post;
 import td.teladoum.baobab.models.User;
@@ -63,6 +64,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
     public void updatePosts(List<Post> newPosts) {
         if (newPosts == null) return;
+        if (newPosts == this.postList) {
+            notifyDataSetChanged();
+            return;
+        }
         androidx.recyclerview.widget.DiffUtil.DiffResult diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(new PostDiffCallback(this.postList, newPosts));
         this.postList.clear();
         this.postList.addAll(newPosts);
@@ -136,9 +141,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
         ImageUtils.loadProfileImage(holder.itemView.getContext(), post.getAuthorProfileImage(), holder.imgPostAuthorAvatar);
         View.OnClickListener authorClickListener = v -> {
-            Intent intent = new Intent(v.getContext(), PageUtilisateurActivity.class);
-            intent.putExtra("user_id", post.getUserId());
-            v.getContext().startActivity(intent);
+            td.teladoum.baobab.utils.NavigationHelper.openUserProfile(v.getContext(), post.getUserId());
         };
         holder.imgPostAuthorAvatar.setOnClickListener(authorClickListener);
         holder.tvPostAuthorName.setOnClickListener(authorClickListener);
@@ -320,8 +323,29 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             options.add("🗑️ Supprimer la publication");
         }
 
+        List<String> extractedUrls = new java.util.ArrayList<>();
+        if (post.getContent() != null) {
+            java.util.regex.Matcher m = android.util.Patterns.WEB_URL.matcher(post.getContent());
+            while (m.find()) {
+                String url = m.group();
+                if (!extractedUrls.contains(url)) {
+                    extractedUrls.add(url);
+                }
+            }
+        }
+
+        if (!extractedUrls.isEmpty()) {
+            options.add("🔗 Ouvrir le lien (" + extractedUrls.get(0) + ")");
+            options.add("📋 Copier le lien");
+        }
+
         options.add(post.isSavedByCurrentUser() ? "🔖 Retirer des enregistrés" : "🔖 Enregistrer la publication");
-        options.add("🌐 Traduire la publication (IA Gemini)");
+
+        boolean hasTextContent = post.getContent() != null && !post.getContent().trim().isEmpty();
+        if (hasTextContent) {
+            options.add("🌐 Traduire la publication (IA Gemini)");
+        }
+
         options.add("❌ Annuler");
 
         String[] items = options.toArray(new String[0]);
@@ -342,6 +366,22 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                     } else if (selected.contains("Supprimer")) {
                         if (listener != null) {
                             listener.onDeleteClick(post);
+                        }
+                    } else if (selected.contains("Ouvrir le lien")) {
+                        if (!extractedUrls.isEmpty()) {
+                            String urlToOpen = extractedUrls.get(0);
+                            if (!urlToOpen.startsWith("http://") && !urlToOpen.startsWith("https://")) {
+                                urlToOpen = "https://" + urlToOpen;
+                            }
+                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(urlToOpen));
+                            context.startActivity(intent);
+                        }
+                    } else if (selected.contains("Copier le lien")) {
+                        if (!extractedUrls.isEmpty()) {
+                            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                            android.content.ClipData clip = android.content.ClipData.newPlainText("Lien du post", extractedUrls.get(0));
+                            if (clipboard != null) clipboard.setPrimaryClip(clip);
+                            es.dmoral.toasty.Toasty.success(context, "Lien copié dans le presse-papier", es.dmoral.toasty.Toasty.LENGTH_SHORT).show();
                         }
                     } else if (selected.contains("Enregistrer")) {
                         boolean saved = repo.toggleSavePost(post.getId(), currentUserId);
@@ -422,7 +462,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         }
                     } else if (match.startsWith("@")) {
                         String username = match.substring(1);
-                        Intent intent = new Intent(context, PageUtilisateurActivity.class);
+                        Intent intent = new Intent(context, User2PageActivity.class);
                         intent.putExtra("user_name", username);
                         context.startActivity(intent);
                     }

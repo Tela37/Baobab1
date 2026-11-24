@@ -14,6 +14,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.canhub.cropper.CropImageContract;
 import com.canhub.cropper.CropImageContractOptions;
@@ -64,8 +66,32 @@ public class PublishMarketplaceActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_publish_marketplace);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                androidx.core.graphics.Insets imeInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime());
+                int bottomInset = Math.max(navBarInsets.bottom, imeInsets.bottom);
+                v.setPadding(0, statusBarInsets.top, 0, bottomInset);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         repository = new MarketplaceRepository(this);
         sessionManager = new SessionManager(this);
@@ -121,7 +147,7 @@ public class PublishMarketplaceActivity extends AppCompatActivity {
                 + " à " + (city != null ? city : "N'Djamena") + (price.isEmpty() ? "" : " pour un prix de " + price + " FCFA") + ".";
 
         Toasty.info(this, "Génération de la description par l'IA Gemini...", Toasty.LENGTH_SHORT).show();
-        GeminiHelper.generateWritingAssistant(prompt, new GeminiHelper.AiCallback() {
+        GeminiHelper.generateWritingAssistant(this, prompt, new GeminiHelper.AiCallback() {
             @Override
             public void onSuccess(String result) {
                 if (etItemDescription != null) etItemDescription.setText(result);

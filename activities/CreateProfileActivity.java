@@ -17,11 +17,16 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.canhub.cropper.CropImageContract;
 import com.canhub.cropper.CropImageContractOptions;
 import com.canhub.cropper.CropImageOptions;
 import com.canhub.cropper.CropImageView;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Calendar;
 
@@ -75,12 +80,37 @@ public class CreateProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_profile);
 
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                androidx.core.graphics.Insets imeInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime());
+                int bottomInset = Math.max(navBarInsets.bottom, imeInsets.bottom);
+                v.setPadding(0, statusBarInsets.top, 0, bottomInset);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
+
         View rootView = findViewById(android.R.id.content);
         if (rootView != null) {
             androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
                 androidx.core.graphics.Insets statusBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
                 androidx.core.graphics.Insets navBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
-                v.setPadding(0, statusBars.top, 0, navBars.bottom);
+                androidx.core.graphics.Insets imeInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime());
+                int bottomInset = Math.max(navBars.bottom, imeInsets.bottom);
+                v.setPadding(0, statusBars.top, 0, bottomInset);
                 return insets;
             });
         }
@@ -209,16 +239,22 @@ public class CreateProfileActivity extends AppCompatActivity {
             }
         }
 
-        finalizeProfileCreation(firstName, lastName, userEmail, pwdToSave, dob, neighborhood, city, country, savedImagePath, profession, relationshipStatus, gender, telephone, bio);
+        finalizeProfileCreation(firstName, lastName, userEmail, null, dob, neighborhood, city, country, savedImagePath, profession, relationshipStatus, gender, telephone, bio);
     }
 
     private void finalizeProfileCreation(String firstName, String lastName, String userEmail, String pwdToSave,
                                        String dob, String neighborhood, String city, String country,
                                        String imagePath, String profession, String relationshipStatus,
                                        String gender, String telephone, String bio) {
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        String firebaseUid = "";
+        if (firebaseUser != null) {
+            firebaseUid = firebaseUser.getUid();
+        }
+
         boolean created = userRepository.insertFullUser(
-                firstName, lastName, userEmail, pwdToSave, dob, neighborhood, city, country,
-                imagePath, profession, relationshipStatus, gender, telephone, bio
+                firstName, lastName, userEmail, null, dob, neighborhood, city, country,
+                imagePath, profession, relationshipStatus, gender, telephone, bio, firebaseUid
         );
 
         if (!created && userRepository.emailExists(userEmail)) {

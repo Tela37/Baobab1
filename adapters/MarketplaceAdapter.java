@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -37,10 +38,14 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
 
     public void updateItems(List<MarketplaceItem> newItems) {
         if (newItems == null) return;
+        List<MarketplaceItem> oldList = new ArrayList<>(this.itemList);
+        this.itemList.clear();
+        this.itemList.addAll(newItems);
+
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override
             public int getOldListSize() {
-                return itemList.size();
+                return oldList.size();
             }
 
             @Override
@@ -50,12 +55,12 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
 
             @Override
             public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                return itemList.get(oldItemPosition).getId() == newItems.get(newItemPosition).getId();
+                return oldList.get(oldItemPosition).getId() == newItems.get(newItemPosition).getId();
             }
 
             @Override
             public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                MarketplaceItem o = itemList.get(oldItemPosition);
+                MarketplaceItem o = oldList.get(oldItemPosition);
                 MarketplaceItem n = newItems.get(newItemPosition);
                 return o.getPrice() == n.getPrice()
                         && Objects.equals(o.getTitle(), n.getTitle())
@@ -65,8 +70,6 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
             }
         });
 
-        this.itemList.clear();
-        this.itemList.addAll(newItems);
         diffResult.dispatchUpdatesTo(this);
     }
 
@@ -116,8 +119,13 @@ public class MarketplaceAdapter extends RecyclerView.Adapter<MarketplaceAdapter.
             tvSellerInfo.setText("👤 " + item.getSellerName());
 
             if (item.getImagePath() != null && !item.getImagePath().trim().isEmpty()) {
+                String path = item.getImagePath().trim();
+                Object loadSource = path;
+                if (path.startsWith("/")) {
+                    loadSource = new java.io.File(path);
+                }
                 Glide.with(itemView.getContext())
-                        .load(item.getImagePath())
+                        .load(loadSource)
                         .placeholder(R.drawable.ic_launcher_background)
                         .error(R.drawable.ic_launcher_background)
                         .centerCrop()

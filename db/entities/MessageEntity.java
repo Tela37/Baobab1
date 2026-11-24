@@ -21,6 +21,8 @@ public class MessageEntity {
     public boolean isDelivered;
     public boolean isDeleted;
     public String reaction;
+    public Integer replyToMessageId;
+    public String replyToText;
 
     public MessageEntity() {}
 
@@ -39,6 +41,8 @@ public class MessageEntity {
         entity.isDelivered = m.isDelivered();
         entity.isDeleted = m.isDeleted();
         entity.reaction = m.getReaction();
+        entity.replyToMessageId = m.getReplyToMessageId();
+        entity.replyToText = m.getReplyToText();
         return entity;
     }
 
@@ -51,6 +55,8 @@ public class MessageEntity {
         m.setDelivered(isDelivered);
         m.setDeleted(isDeleted);
         m.setReaction(reaction);
+        m.setReplyToMessageId(replyToMessageId);
+        m.setReplyToText(replyToText);
         return m;
     }
 }

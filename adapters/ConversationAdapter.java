@@ -141,6 +141,10 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
 
     public void updateConversations(List<ConversationItem> newItems) {
         if (newItems == null) return;
+        if (newItems == this.conversationList) {
+            notifyDataSetChanged();
+            return;
+        }
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new ConversationDiffCallback(this.conversationList, newItems));
         this.conversationList.clear();
         this.conversationList.addAll(newItems);

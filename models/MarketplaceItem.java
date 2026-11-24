@@ -18,6 +18,7 @@ public class MarketplaceItem {
     private String imagePath;
     private String createdAt;
     private boolean isAvailable;
+    private int viewsCount;
 
     public MarketplaceItem() {
         this.isAvailable = true;
@@ -152,5 +153,25 @@ public class MarketplaceItem {
 
     public void setAvailable(boolean available) {
         isAvailable = available;
+    }
+
+    public void setImage_path(String image_path) {
+        if (this.imagePath == null) this.imagePath = image_path;
+    }
+
+    public void setSeller_name(String seller_name) {
+        if (this.sellerName == null) this.sellerName = seller_name;
+    }
+
+    public void setSeller_phone(String seller_phone) {
+        if (this.sellerPhone == null) this.sellerPhone = seller_phone;
+    }
+
+    public int getViewsCount() {
+        return viewsCount;
+    }
+
+    public void setViewsCount(int viewsCount) {
+        this.viewsCount = viewsCount;
     }
 }

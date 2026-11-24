@@ -21,6 +21,7 @@ public class MarketplaceEntity {
     public String imagePath;
     public String createdAt;
     public boolean isAvailable;
+    public int viewsCount;
 
     public MarketplaceEntity() {}
 
@@ -39,10 +40,13 @@ public class MarketplaceEntity {
         entity.imagePath = item.getImagePath();
         entity.createdAt = item.getCreatedAt();
         entity.isAvailable = item.isAvailable();
+        entity.viewsCount = item.getViewsCount();
         return entity;
     }
 
     public MarketplaceItem toModel() {
-        return new MarketplaceItem(id, userId, sellerName, sellerPhone, title, description, price, category, city, imagePath, createdAt, isAvailable);
+        MarketplaceItem model = new MarketplaceItem(id, userId, sellerName, sellerPhone, title, description, price, category, city, imagePath, createdAt, isAvailable);
+        model.setViewsCount(viewsCount);
+        return model;
     }
 }

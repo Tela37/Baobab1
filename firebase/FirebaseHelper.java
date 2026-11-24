@@ -1,7 +1,5 @@
 package td.teladoum.baobab.firebase;
 
-import android.net.Uri;
-
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -11,8 +9,6 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,21 +23,15 @@ import td.teladoum.baobab.models.Story;
 import td.teladoum.baobab.models.User;
 
 /**
- * Assistant Firebase gérant l'authentification, le stockage, Firestore (exclusivement pour les comptes utilisateurs)
+ * Assistant Firebase gérant l'authentification, Firestore (exclusivement pour les comptes utilisateurs)
  * et Realtime Database (pour les comptes et toutes les autres données : posts, messages, notifications, stories, etc.).
  */
 public class FirebaseHelper {
-
-    public interface OnUploadCompleteListener {
-        void onSuccess(String downloadUrl);
-        void onFailure(Exception e);
-    }
 
     private static FirebaseHelper instance;
     private final FirebaseAuth auth;
     private final FirebaseFirestore firestore;
     private final FirebaseDatabase realtimeDb;
-    private final FirebaseStorage storage;
 
     private FirebaseHelper() {
         auth = FirebaseAuth.getInstance();
@@ -50,7 +40,6 @@ public class FirebaseHelper {
         try {
             realtimeDb.setPersistenceEnabled(true);
         } catch (Exception ignored) {}
-        storage = FirebaseStorage.getInstance();
     }
 
     public static synchronized FirebaseHelper getInstance() {
@@ -72,10 +61,6 @@ public class FirebaseHelper {
         return realtimeDb;
     }
 
-    public FirebaseStorage getStorage() {
-        return storage;
-    }
-
     public void loginUser(String email, String password, OnCompleteListener<AuthResult> listener) {
         if (email == null || password == null) return;
         auth.signInWithEmailAndPassword(email, password).addOnCompleteListener(listener);
@@ -84,27 +69,6 @@ public class FirebaseHelper {
     public void registerUser(String email, String password, OnCompleteListener<AuthResult> listener) {
         if (email == null || password == null) return;
         auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(listener);
-    }
-
-    public void uploadMedia(String folder, Uri uri, OnUploadCompleteListener listener) {
-        if (uri == null) {
-            if (listener != null) listener.onFailure(new IllegalArgumentException("Uri is null"));
-            return;
-        }
-        String fileName = folder + "/" + System.currentTimeMillis() + "_" + uri.getLastPathSegment();
-        StorageReference ref = storage.getReference().child(fileName);
-        ref.putFile(uri).continueWithTask(task -> {
-            if (!task.isSuccessful() && task.getException() != null) {
-                throw task.getException();
-            }
-            return ref.getDownloadUrl();
-        }).addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null) {
-                if (listener != null) listener.onSuccess(task.getResult().toString());
-            } else {
-                if (listener != null) listener.onFailure(task.getException());
-            }
-        });
     }
 
     public ListenerRegistration listenToMessages(int conversationId, EventListener<QuerySnapshot> listener) {
@@ -151,7 +115,7 @@ public class FirebaseHelper {
         map.put("first_name", user.getFirstName());
         map.put("last_name", user.getLastName());
         map.put("email", user.getEmail());
-        map.put("password", user.getPassword());
+        // password no longer stored in database per instructions
         map.put("phone", user.getPhone());
         map.put("dob", user.getDob());
         map.put("neighborhood", user.getNeighborhood());
@@ -164,6 +128,7 @@ public class FirebaseHelper {
         map.put("bio", user.getBio());
         map.put("is_admin", user.isAdmin());
         map.put("is_verified", user.isVerified());
+        map.put("firebaseUid", user.getFirebaseUid());
 
         if (user.getEmail() != null) {
             firestore.collection("users").document(String.valueOf(user.getId())).set(map)
@@ -256,7 +221,12 @@ public class FirebaseHelper {
 
     public void syncStoryToRealtimeDb(Story story) {
         if (story == null) return;
-        realtimeDb.getReference("stories").child(String.valueOf(story.getId())).setValue(story);
+        realtimeDb.getReference("stories").child(String.valueOf(story.getId())).setValue(story)
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful() && task.getException() != null) {
+                        android.util.Log.e("FirebaseHelper", "Story sync failed: " + task.getException().getMessage());
+                    }
+                });
     }
 
     public void syncStoryReactionToRealtimeDb(int storyId, int userId, String reactionType) {
@@ -292,4 +262,3 @@ public class FirebaseHelper {
         realtimeDb.getReference("friend_requests").child(reqKey).removeValue();
     }
 }
-

@@ -26,18 +26,20 @@ public class ConversationDiffCallback extends DiffUtil.Callback {
 
     @Override
     public int getOldListSize() {
-        return oldList.size();
+        return oldList != null ? oldList.size() : 0;
     }
 
     @Override
     public int getNewListSize() {
-        return newList.size();
+        return newList != null ? newList.size() : 0;
     }
 
     @Override
     public boolean areItemsTheSame(
             int oldItemPosition,
             int newItemPosition) {
+
+        if (oldList == null || newList == null) return false;
 
         return oldList.get(oldItemPosition)
                 .getConversationId()

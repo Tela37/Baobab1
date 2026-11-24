@@ -24,10 +24,13 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
+import td.teladoum.baobab.helpers.DialogUtils;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -39,6 +42,7 @@ import com.canhub.cropper.CropImageContractOptions;
 import com.canhub.cropper.CropImageOptions;
 import com.canhub.cropper.CropImageView;
 import com.google.android.material.navigation.NavigationView;
+import td.teladoum.baobab.ui.learning.LibraryActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -102,6 +106,7 @@ public class AcceuilActivity extends AppCompatActivity {
     private Handler storyTimerHandler;
     private Runnable storyTimerRunnable;
 
+    private td.teladoum.baobab.viewmodels.AcceuilViewModel acceuilViewModel;
     private PostAdapter postAdapter;
     private StoryAdapter storyAdapter;
     private final List<Post> postList = new ArrayList<>();
@@ -186,7 +191,7 @@ public class AcceuilActivity extends AppCompatActivity {
         options.imageSourceIncludeGallery = true;
         options.imageSourceIncludeCamera = true;
         options.guidelines = CropImageView.Guidelines.ON;
-        options.activityTitle = "Recadrer l'image";
+        options.activityTitle = "Recadrer";
         options.cropMenuCropButtonTitle = "Valider";
         options.activityMenuIconColor = android.graphics.Color.WHITE;
         options.toolbarColor = android.graphics.Color.parseColor("#2196F3");
@@ -217,15 +222,41 @@ public class AcceuilActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_acceuil);
 
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                v.setPadding(0, 0, 0, 0);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         View mainContentContainer = findViewById(R.id.drawerLayout);
         if (mainContentContainer != null) {
             androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContentContainer, (v, insets) -> {
-                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                v.setPadding(0, 0, 0, 0);
+                return insets;
+            });
+        }
+
+        View bottomNav = findViewById(R.id.layoutBottomNavContainer);
+        if (bottomNav != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, insets) -> {
                 androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
-                v.setPadding(0, statusBarInsets.top, 0, navBarInsets.bottom);
+                v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), navBarInsets.bottom);
                 return insets;
             });
         }
@@ -246,31 +277,21 @@ public class AcceuilActivity extends AppCompatActivity {
             td.teladoum.baobab.helpers.AnalyticsHelper.setCrashlyticsUserContext(sessionManager.getUserId(), sessionManager.getEmail());
         }
 
-        initViews();
-        setupNavigationDrawer(toolbar);
-        checkPermissions();
-
         userRepository = new UserRepository(this);
         postRepository = new PostRepository(this);
         storyRepository = new StoryRepository(this);
         notificationRepository = new NotificationRepository(this);
         conversationRepository = new ConversationRepository(this);
 
+        initViews();
+        setupNavigationDrawer(toolbar);
+        checkPermissions();
+
         setupRecyclerView();
         setupStoriesRecyclerView();
 
-        // 1. Affichage instantané du cache local (< 100ms)
-        loadPosts();
-        loadStories();
-
-        // 2. Synchronisation cloud asynchrone en arrière-plan
-        PostRepository.syncPendingPosts(this);
-        MessageRepository.syncPendingMessages(this);
-        PostRepository.loadAllPostsFromCloud(this, this::loadPosts);
-        storyRepository.loadStoriesPage(20, this::loadStories);
-        checkEmailVerification();
-
-        loadCurrentUserAvatar();
+        acceuilViewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.AcceuilViewModel.class);
+        setupViewModelObservers();
 
         imgUserAvatar.setOnClickListener(v -> {
             User currentUser = userRepository.getUserById(sessionManager.getUserId());
@@ -280,6 +301,34 @@ public class AcceuilActivity extends AppCompatActivity {
         });
 
         ibAttachPostImage.setOnClickListener(v -> showPostMediaSelectionOptions());
+
+        getWindow().getDecorView().post(() -> {
+            if (isFinishing() || isDestroyed()) return;
+            td.teladoum.baobab.helpers.PresenceManager.init(getApplication());
+            td.teladoum.baobab.helpers.PresenceManager.updatePresence(this, true);
+
+            td.teladoum.baobab.helpers.AnalyticsHelper.logScreenView(this, "AcceuilActivity");
+            if (sessionManager != null) {
+                td.teladoum.baobab.helpers.AnalyticsHelper.setCrashlyticsUserContext(sessionManager.getUserId(), sessionManager.getEmail());
+            }
+
+            // 1. Affichage instantané du cache local (< 100ms)
+            loadPosts();
+            loadStories();
+            if (storyRepository != null) {
+                storyRepository.loadStoriesFromCloud(this::loadStories);
+            }
+
+            // 2. Synchronisation cloud asynchrone en arrière-plan
+            PostRepository.syncPendingPosts(this);
+            MessageRepository.syncPendingMessages(this);
+            if (sessionManager != null) {
+                acceuilViewModel.loadFeed(sessionManager.getUserId());
+            }
+            checkEmailVerification();
+
+            loadCurrentUserAvatar();
+        });
         btnPublishPost.setOnClickListener(v -> publishPost());
 
         loadPosts();
@@ -305,15 +354,15 @@ public class AcceuilActivity extends AppCompatActivity {
                 }
                 // 2. Si une boîte de dialogue de story est affichée, on la ferme
                 else if (activeStoryDialog != null && activeStoryDialog.isShowing()) {
-                    activeStoryDialog.dismiss();
+                    DialogUtils.safeDismiss(activeStoryDialog);
                 }
                 // 3. Si un lecteur vidéo est ouvert en plein écran, on le ferme
                 else if (activeVideoDialog != null && activeVideoDialog.isShowing()) {
-                    activeVideoDialog.dismiss();
+                    DialogUtils.safeDismiss(activeVideoDialog);
                 }
                 // 4. Si un aperçu d'image est ouvert, on le ferme
                 else if (activeImageDialog != null && activeImageDialog.isShowing()) {
-                    activeImageDialog.dismiss();
+                    DialogUtils.safeDismiss(activeImageDialog);
                 }
                 // 5. Si aucun élément intermédiaire n'est ouvert :
                 // On utilise moveTaskToBack(true) au lieu de finish().
@@ -322,8 +371,63 @@ public class AcceuilActivity extends AppCompatActivity {
                 // - moveTaskToBack(true) masque simplement l'application et la place en arrière-plan
                 //   (exactement comme si l'utilisateur avait appuyé sur le bouton "Accueil" / Home).
                 //   Ainsi, l'application reste active en mémoire et réapparaît instantanément lors de la réouverture.
-                else {
-                    moveTaskToBack(true);
+            }
+        });
+    }
+
+    private void setupViewModelObservers() {
+        if (acceuilViewModel == null) return;
+
+        acceuilViewModel.getPostsLiveData().observe(this, newPosts -> {
+            if (newPosts == null) return;
+            fullPostList.clear();
+            fullPostList.addAll(newPosts);
+            postList.clear();
+            postList.addAll(newPosts);
+            if (postAdapter != null) {
+                postAdapter.updatePosts(postList);
+            }
+        });
+
+        acceuilViewModel.getStoriesLiveData().observe(this, newFriendGroups -> {
+            if (newFriendGroups == null) return;
+            friendStoryGroupList.clear();
+            friendStoryGroupList.addAll(newFriendGroups);
+            if (storyAdapter != null) {
+                User currentUser = userRepository.getUserById(sessionManager.getUserId());
+                String currentAvatar = (currentUser != null && currentUser.getProfileImage() != null) ? currentUser.getProfileImage() : sessionManager.getProfileImage();
+                storyAdapter.updateData(friendStoryGroupList, currentUserStoryGroup, currentAvatar);
+            }
+        });
+
+        acceuilViewModel.getCurrentUserStoryGroupLiveData().observe(this, ownGroup -> {
+            currentUserStoryGroup = ownGroup;
+            if (storyAdapter != null) {
+                User currentUser = userRepository.getUserById(sessionManager.getUserId());
+                String currentAvatar = (currentUser != null && currentUser.getProfileImage() != null) ? currentUser.getProfileImage() : sessionManager.getProfileImage();
+                storyAdapter.updateData(friendStoryGroupList, currentUserStoryGroup, currentAvatar);
+            }
+        });
+
+        acceuilViewModel.getUnreadNotificationsCountLiveData().observe(this, unreadNotifs -> {
+            if (tvNotificationBadge != null && unreadNotifs != null) {
+                if (unreadNotifs > 0) {
+                    tvNotificationBadge.setVisibility(View.VISIBLE);
+                    tvNotificationBadge.setText(unreadNotifs > 9 ? "9+" : String.valueOf(unreadNotifs));
+                } else {
+                    tvNotificationBadge.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        acceuilViewModel.getSystemAnnouncementLiveData().observe(this, text -> {
+            TextView tvAppAnnouncement = findViewById(R.id.tvAppAnnouncement);
+            if (tvAppAnnouncement != null) {
+                if (text != null && !text.isEmpty()) {
+                    tvAppAnnouncement.setText("📢 " + text);
+                    tvAppAnnouncement.setVisibility(View.VISIBLE);
+                } else {
+                    tvAppAnnouncement.setVisibility(View.GONE);
                 }
             }
         });
@@ -358,7 +462,7 @@ public class AcceuilActivity extends AppCompatActivity {
 
         if (swipeRefreshLayout != null) {
             swipeRefreshLayout.setOnRefreshListener(() -> {
-                PostRepository.loadFirstPage(AcceuilActivity.this, 20, () -> {
+                PostRepository.loadAllPostsFromCloud(AcceuilActivity.this, () -> {
                     userRepository.syncAllUsersFromCloud(() -> {
                         loadPosts();
                         loadStories();
@@ -387,6 +491,7 @@ public class AcceuilActivity extends AppCompatActivity {
                 this::showStoryGroupViewerDialog
         );
 
+        rvStories.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         rvStories.setHasFixedSize(true);
         rvStories.setAdapter(storyAdapter);
     }
@@ -500,8 +605,7 @@ public class AcceuilActivity extends AppCompatActivity {
                         if (storyTimerHandler != null) storyTimerHandler.postDelayed(this, 100);
                     } else {
                         // Toutes les stories de cet utilisateur sont finies -> fermer le visualiseur
-                        if (activeStoryDialog != null && activeStoryDialog.isShowing())
-                            activeStoryDialog.dismiss();
+                        DialogUtils.safeDismiss(activeStoryDialog);
                     }
                 } else {
                     if (storyTimerHandler != null) storyTimerHandler.postDelayed(this, 100);
@@ -521,10 +625,7 @@ public class AcceuilActivity extends AppCompatActivity {
         });
 
         if (ibClose != null) {
-            ibClose.setOnClickListener(v -> {
-                if (activeStoryDialog != null && activeStoryDialog.isShowing())
-                    activeStoryDialog.dismiss();
-            });
+            ibClose.setOnClickListener(v -> DialogUtils.safeDismiss(activeStoryDialog));
         }
 
         // Navigation tactile & appui sans relâcher pour mettre la story en pause
@@ -545,8 +646,7 @@ public class AcceuilActivity extends AppCompatActivity {
                             if (progressStoryTimer != null) progressStoryTimer.setProgress(0);
                             renderCurrentStory(stories.get(currentStoryIndex[0]), tvAuthorName, tvStoryTime, tvStoryViewsCount, imgStoryViewerAvatar, imgStoryViewerPhoto, tvCaption, tvCurrentReaction);
                         } else {
-                            if (activeStoryDialog != null && activeStoryDialog.isShowing())
-                                activeStoryDialog.dismiss();
+                            DialogUtils.safeDismiss(activeStoryDialog);
                         }
                     }
                     return true;
@@ -680,6 +780,9 @@ public class AcceuilActivity extends AppCompatActivity {
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(drawerToggle);
         drawerToggle.syncState();
+        if (drawerToggle.getDrawerArrowDrawable() != null) {
+            drawerToggle.getDrawerArrowDrawable().setColor(android.graphics.Color.WHITE);
+        }
 
         updateNavHeaderData();
         updateDrawerBadges();
@@ -709,21 +812,19 @@ public class AcceuilActivity extends AppCompatActivity {
             } else if (id == R.id.nav_groups) {
                 startActivity(new Intent(AcceuilActivity.this, GroupListActivity.class));
                 return true;
-            } else if (id == R.id.nav_profile) {
-                startActivity(new Intent(AcceuilActivity.this, ProfileActivity.class));
-                return true;
-            } else if (id == R.id.nav_my_posts) {
-                startActivity(new Intent(AcceuilActivity.this, MesPublicationActivity.class));
+            }  else if (id == R.id.nav_personal_page) {
+                startActivity(new Intent(AcceuilActivity.this, PagePersonnelleActivity.class));
                 return true;
             } else if (id == R.id.nav_marketplace) {
                 startActivity(new Intent(AcceuilActivity.this, MarketplaceActivity.class));
                 return true;
+            } else if (id == R.id.nav_library) {
+                startActivity(new Intent(AcceuilActivity.this, LibraryActivity.class));
+                return true;
             } else if (id == R.id.nav_gemini_assistant) {
                 startActivity(new Intent(AcceuilActivity.this, GeminiAssistantActivity.class));
                 return true;
-            } else if (id == R.id.nav_videos) {
-                startActivity(new Intent(AcceuilActivity.this, VideoActivity.class));
-                return true;
+
             } else if (id == R.id.nav_settings) {
                 startActivity(new Intent(AcceuilActivity.this, ParametreActivity.class));
                 return true;
@@ -755,6 +856,14 @@ public class AcceuilActivity extends AppCompatActivity {
             }
             if (navHeaderAvatar != null) {
                 ImageUtils.loadProfileImage(this, profileImage, navHeaderAvatar);
+                navHeaderAvatar.setOnClickListener(v -> {
+                    String imgToPreview = currentUser != null && currentUser.getProfileImage() != null && !currentUser.getProfileImage().trim().isEmpty() 
+                            ? currentUser.getProfileImage() 
+                            : profileImage;
+                    if (imgToPreview != null && !imgToPreview.trim().isEmpty()) {
+                        showImagePreviewDialog(imgToPreview);
+                    }
+                });
             }
         }
     }
@@ -793,7 +902,7 @@ public class AcceuilActivity extends AppCompatActivity {
 
         MenuItem itemFriends = menu.findItem(R.id.nav_friends);
         if (itemFriends != null) {
-            String title = "Mes Amis 👥";
+            String title = "Mes Amis";
             itemFriends.setTitle(title);
         }
 
@@ -823,7 +932,7 @@ public class AcceuilActivity extends AppCompatActivity {
         }
         sessionManager.logout();
         try {
-            com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
+            new td.teladoum.baobab.repositories.AuthRepository(this).signOut();
         } catch (Exception ignored) {
         }
         try {
@@ -861,9 +970,19 @@ public class AcceuilActivity extends AppCompatActivity {
         rvPosts.setHasFixedSize(true);
         rvPosts.setNestedScrollingEnabled(false);
 
+        View bottomNav = findViewById(R.id.layoutBottomNavContainer);
         NestedScrollView nestedScrollView = findViewById(R.id.nestedScrollView);
         if (nestedScrollView != null) {
             nestedScrollView.setOnScrollChangeListener((NestedScrollView v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) -> {
+                if (bottomNav != null) {
+                    int dy = scrollY - oldScrollY;
+                    if (dy > 12 && bottomNav.getTranslationY() == 0) {
+                        bottomNav.animate().translationY(bottomNav.getHeight() + 50).setDuration(200).start();
+                    } else if (dy < -12 && bottomNav.getTranslationY() != 0) {
+                        bottomNav.animate().translationY(0).setDuration(200).start();
+                    }
+                }
+
                 if (v.getChildAt(0) != null) {
                     if (scrollY >= (v.getChildAt(0).getMeasuredHeight() - v.getMeasuredHeight() - 500)) {
                         if (!isLoadingMorePosts && PostRepository.hasMorePosts()) {
@@ -1118,24 +1237,6 @@ public class AcceuilActivity extends AppCompatActivity {
 
         if (selectedPostVideoUri != null) {
             savedPostVideoPath = ImageUtils.saveVideoToInternalStorage(this, selectedPostVideoUri);
-            if (PostRepository.isNetworkAvailable(this)) {
-                String localVideoPath = savedPostVideoPath;
-                if (progressPost != null) progressPost.setVisibility(View.VISIBLE);
-                if (btnPublishPost != null) btnPublishPost.setVisibility(View.GONE);
-
-                FirebaseHelper.getInstance().uploadMedia("post_videos", selectedPostVideoUri, new FirebaseHelper.OnUploadCompleteListener() {
-                    @Override
-                    public void onSuccess(String downloadUrl) {
-                        uploadPostImagesAndFinalize(content, downloadUrl, isSensitive);
-                    }
-
-                    @Override
-                    public void onFailure(Exception e) {
-                        uploadPostImagesAndFinalize(content, localVideoPath, isSensitive);
-                    }
-                });
-                return;
-            }
         }
 
         uploadPostImagesAndFinalize(content, savedPostVideoPath, isSensitive);
@@ -1165,37 +1266,6 @@ public class AcceuilActivity extends AppCompatActivity {
         }
 
         finalizePostPublish(content, savedPostImagePath, videoPath, isSensitive);
-    }
-
-    private void uploadMultiplePostImages(String content, String videoPath, boolean isSensitive, int index, StringBuilder urlsBuilder) {
-        if (index >= selectedPostImageUris.size() || index >= 10) {
-            finalizePostPublish(content, urlsBuilder.toString(), videoPath, isSensitive);
-            return;
-        }
-
-        Uri uri = selectedPostImageUris.get(index);
-        FirebaseHelper.getInstance().uploadMedia("post_images", uri, new FirebaseHelper.OnUploadCompleteListener() {
-            @Override
-            public void onSuccess(String downloadUrl) {
-                if (urlsBuilder.length() > 0) {
-                    urlsBuilder.append("||");
-                }
-                urlsBuilder.append(downloadUrl);
-                uploadMultiplePostImages(content, videoPath, isSensitive, index + 1, urlsBuilder);
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                String localPath = ImageUtils.saveImageToInternalStorage(AcceuilActivity.this, uri);
-                if (localPath != null) {
-                    if (urlsBuilder.length() > 0) {
-                        urlsBuilder.append("||");
-                    }
-                    urlsBuilder.append(localPath);
-                }
-                uploadMultiplePostImages(content, videoPath, isSensitive, index + 1, urlsBuilder);
-            }
-        });
     }
 
     private void finalizePostPublish(String content, String imagePath, String videoPath, boolean isSensitive) {
@@ -1234,37 +1304,10 @@ public class AcceuilActivity extends AppCompatActivity {
 
     private void showVideoPlayerDialog(String videoPath) {
         if (videoPath == null || videoPath.trim().isEmpty()) return;
-
-        dismissActiveDialogs();
-
-        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_video_player, null);
-        android.widget.VideoView videoViewPlayer = dialogView.findViewById(R.id.videoViewPlayer);
-        ImageButton ibClose = dialogView.findViewById(R.id.ibCloseVideoPlayer);
-
-        android.widget.MediaController mediaController = new android.widget.MediaController(this);
-        mediaController.setAnchorView(videoViewPlayer);
-        videoViewPlayer.setMediaController(mediaController);
-        videoViewPlayer.setVideoPath(videoPath);
-
-        activeVideoDialog = new AlertDialog.Builder(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-                .setView(dialogView)
-                .create();
-
-        if (ibClose != null) {
-            ibClose.bringToFront();
-            ibClose.setOnClickListener(v -> {
-                videoViewPlayer.stopPlayback();
-                if (activeVideoDialog != null && activeVideoDialog.isShowing())
-                    activeVideoDialog.dismiss();
-            });
-        }
-
-        activeVideoDialog.setOnDismissListener(d -> {
-            videoViewPlayer.stopPlayback();
-            activeVideoDialog = null;
-        });
-        activeVideoDialog.show();
-        videoViewPlayer.start();
+        Intent intent = new Intent(this, VideoPlayerActivity.class);
+        intent.putExtra("video_url", videoPath);
+        intent.putExtra("video_title", "Vidéo de la publication");
+        startActivity(intent);
     }
 
     private void loadPosts() {
@@ -1406,10 +1449,7 @@ public class AcceuilActivity extends AppCompatActivity {
 
         if (ibClose != null) {
             ibClose.bringToFront();
-            ibClose.setOnClickListener(v -> {
-                if (activeImageDialog != null && activeImageDialog.isShowing())
-                    activeImageDialog.dismiss();
-            });
+            ibClose.setOnClickListener(v -> DialogUtils.safeDismiss(activeImageDialog));
         }
 
         activeImageDialog.setOnDismissListener(d -> activeImageDialog = null);
@@ -1498,10 +1538,7 @@ public class AcceuilActivity extends AppCompatActivity {
 
         if (ibClose != null) {
             ibClose.bringToFront();
-            ibClose.setOnClickListener(v -> {
-                if (activeImageDialog != null && activeImageDialog.isShowing())
-                    activeImageDialog.dismiss();
-            });
+            ibClose.setOnClickListener(v -> DialogUtils.safeDismiss(activeImageDialog));
         }
 
         activeImageDialog.setOnDismissListener(d -> activeImageDialog = null);
@@ -1622,37 +1659,49 @@ public class AcceuilActivity extends AppCompatActivity {
     private static boolean isEmailCheckPrompted = false;
 
     private void checkEmailVerification() {
-        if (isEmailCheckPrompted) return;
         com.google.firebase.auth.FirebaseUser fbUser = FirebaseHelper.getInstance().getAuth().getCurrentUser();
-        if (fbUser != null && fbUser.getEmail() != null) {
-            String email = fbUser.getEmail();
-            if (!email.startsWith("phone_") && !email.startsWith("fb_") && !fbUser.isEmailVerified()) {
-                isEmailCheckPrompted = true;
-                new AlertDialog.Builder(this)
-                        .setTitle("Vérification e-mail requise 📩")
-                        .setMessage("Votre adresse e-mail (" + email + ") n'a pas encore été vérifiée. Veuillez consulter votre boîte de réception pour valider votre compte.")
-                        .setPositiveButton("Renvoyer l'e-mail 📩", (dialog, which) -> {
-                            fbUser.sendEmailVerification();
-                            Toasty.success(this, "E-mail de vérification renvoyé avec succès !", Toasty.LENGTH_SHORT).show();
-                        })
-                        .setNeutralButton("J'ai vérifié 🔄", (dialog, which) -> {
-                            fbUser.reload().addOnCompleteListener(task -> {
-                                if (fbUser.isEmailVerified()) {
-                                    Toasty.success(this, "E-mail vérifié avec succès ! 🎉", Toasty.LENGTH_SHORT).show();
-                                } else {
-                                    Toasty.warning(this, "E-mail non encore vérifié. Veuillez cliquer sur le lien reçu.", Toasty.LENGTH_SHORT).show();
-                                }
-                            });
-                        })
-                        .setNegativeButton("Plus tard", null)
-                        .show();
+        if (fbUser == null || fbUser.getEmail() == null) return;
+
+        String email = fbUser.getEmail();
+        if (email.startsWith("phone_") || email.startsWith("fb_")) return;
+
+        if (fbUser.isEmailVerified()) return;
+
+        fbUser.reload().addOnCompleteListener(task -> {
+            if (isFinishing() || isDestroyed()) return;
+
+            if (fbUser.isEmailVerified()) {
+                return;
             }
-        }
+
+            if (isEmailCheckPrompted) return;
+
+            isEmailCheckPrompted = true;
+            new AlertDialog.Builder(this)
+                    .setTitle("Vérification e-mail requise 📩")
+                    .setMessage("Votre adresse e-mail (" + email + ") n'a pas encore été vérifiée. Veuillez consulter votre boîte de réception pour valider votre compte.")
+                    .setPositiveButton("Renvoyer l'e-mail 📩", (dialog, which) -> {
+                        fbUser.sendEmailVerification();
+                        Toasty.success(this, "E-mail de vérification renvoyé avec succès !", Toasty.LENGTH_SHORT).show();
+                    })
+                    .setNeutralButton("J'ai vérifié 🔄", (dialog, which) -> {
+                        fbUser.reload().addOnCompleteListener(reloadTask -> {
+                            if (fbUser.isEmailVerified()) {
+                                Toasty.success(this, "E-mail vérifié avec succès ! 🎉", Toasty.LENGTH_SHORT).show();
+                            } else {
+                                Toasty.warning(this, "E-mail non encore vérifié. Veuillez cliquer sur le lien reçu.", Toasty.LENGTH_SHORT).show();
+                            }
+                        });
+                    })
+                    .setNegativeButton("Plus tard", null)
+                    .show();
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        td.teladoum.baobab.helpers.BottomNavigationHelper.setupBottomNavigation(this, td.teladoum.baobab.helpers.BottomNavigationHelper.TAB_HOME);
         checkEmailVerification();
         checkAndSyncOfflineData();
         loadPosts();
@@ -1724,16 +1773,16 @@ public class AcceuilActivity extends AppCompatActivity {
         if (storyTimerHandler != null && storyTimerRunnable != null) {
             storyTimerHandler.removeCallbacks(storyTimerRunnable);
         }
-        if (activeStoryDialog != null && activeStoryDialog.isShowing()) {
-            activeStoryDialog.dismiss();
+        if (activeStoryDialog != null) {
+            DialogUtils.safeDismiss(activeStoryDialog);
             activeStoryDialog = null;
         }
-        if (activeVideoDialog != null && activeVideoDialog.isShowing()) {
-            activeVideoDialog.dismiss();
+        if (activeVideoDialog != null) {
+            DialogUtils.safeDismiss(activeVideoDialog);
             activeVideoDialog = null;
         }
-        if (activeImageDialog != null && activeImageDialog.isShowing()) {
-            activeImageDialog.dismiss();
+        if (activeImageDialog != null) {
+            DialogUtils.safeDismiss(activeImageDialog);
             activeImageDialog = null;
         }
     }

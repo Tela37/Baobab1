@@ -170,6 +170,11 @@ public class StoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
             storyHolder.tvStoryAuthorName.setText(isOwnStory ? "Votre story" : group.getUserName());
 
+            if (storyHolder.tvStoryRemainingTime != null) {
+                String remaining = td.teladoum.baobab.utils.TimeUtils.getRemainingTimeText(group.getLatestCreatedAt());
+                storyHolder.tvStoryRemainingTime.setText(remaining);
+            }
+
             if (group.getStoriesCount() > 1) {
                 storyHolder.tvStoryCountBadge.setVisibility(View.VISIBLE);
                 storyHolder.tvStoryCountBadge.setText(String.valueOf(group.getStoriesCount()));
@@ -177,8 +182,15 @@ public class StoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                 storyHolder.tvStoryCountBadge.setVisibility(View.GONE);
             }
 
-            ImageUtils.loadStoryImage(storyHolder.itemView.getContext(), group.getCoverImage(), storyHolder.imgStoryBackground);
-            ImageUtils.loadProfileImage(storyHolder.itemView.getContext(), group.getUserAvatar(), storyHolder.imgStoryAuthorAvatar);
+            String cover = group.getCoverImage();
+            if (cover == null || cover.trim().isEmpty()) {
+                cover = group.getUserAvatar();
+            }
+            if (isOwnStory && (cover == null || cover.trim().isEmpty())) {
+                cover = currentUserAvatar;
+            }
+            ImageUtils.loadStoryImage(storyHolder.itemView.getContext(), cover, storyHolder.imgStoryBackground);
+            ImageUtils.loadProfileImage(storyHolder.itemView.getContext(), isOwnStory && currentUserAvatar != null ? currentUserAvatar : group.getUserAvatar(), storyHolder.imgStoryAuthorAvatar);
 
             View.OnClickListener clickListener = v -> {
                 if (storyGroupClickListener != null) {
@@ -220,6 +232,7 @@ public class StoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         ImageView imgStoryAuthorAvatar;
         TextView tvStoryAuthorName;
         TextView tvStoryCountBadge;
+        TextView tvStoryRemainingTime;
 
         public PublishedStoryViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -228,6 +241,7 @@ public class StoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             imgStoryAuthorAvatar = itemView.findViewById(R.id.imgStoryAuthorAvatar);
             tvStoryAuthorName = itemView.findViewById(R.id.tvStoryAuthorName);
             tvStoryCountBadge = itemView.findViewById(R.id.tvStoryCountBadge);
+            tvStoryRemainingTime = itemView.findViewById(R.id.tvStoryRemainingTime);
         }
     }
 }

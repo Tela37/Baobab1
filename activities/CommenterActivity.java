@@ -2,6 +2,7 @@ package td.teladoum.baobab.activities;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -11,9 +12,14 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
+import td.teladoum.baobab.helpers.DialogUtils;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -28,8 +34,11 @@ import td.teladoum.baobab.R;
 import td.teladoum.baobab.adapters.CommentAdapter;
 import td.teladoum.baobab.models.Comment;
 import td.teladoum.baobab.models.Post;
+import td.teladoum.baobab.models.User;
 import td.teladoum.baobab.repositories.CommentRepository;
+import td.teladoum.baobab.repositories.NotificationRepository;
 import td.teladoum.baobab.repositories.PostRepository;
+import td.teladoum.baobab.repositories.UserRepository;
 import td.teladoum.baobab.utils.ImageUtils;
 import td.teladoum.baobab.utils.SessionManager;
 
@@ -53,6 +62,8 @@ public class CommenterActivity extends AppCompatActivity {
 
     private PostRepository postRepository;
     private CommentRepository commentRepository;
+    private UserRepository userRepository;
+    private NotificationRepository notificationRepository;
     private SessionManager sessionManager;
 
     private CommentAdapter commentAdapter;
@@ -63,10 +74,52 @@ public class CommenterActivity extends AppCompatActivity {
     private Post currentPost;
     private Integer replyingToCommentId = null;
 
+    private ImageButton ibAttachImage;
+    private View layoutCommentImagePreview;
+    private ImageView imgCommentImagePreview;
+    private ImageButton ibCancelCommentImage;
+    private Uri selectedCommentImageUri = null;
+
+    private final ActivityResultLauncher<String> commentImagePickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null) {
+                    selectedCommentImageUri = uri;
+                    if (layoutCommentImagePreview != null) layoutCommentImagePreview.setVisibility(View.VISIBLE);
+                    if (imgCommentImagePreview != null) {
+                        ImageUtils.loadFullImage(this, uri.toString(), imgCommentImagePreview);
+                    }
+                    Toasty.info(this, "Image jointe au commentaire 📷", Toasty.LENGTH_SHORT).show();
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_commenter);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                androidx.core.graphics.Insets imeInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime());
+                int bottomInset = Math.max(navBarInsets.bottom, imeInsets.bottom);
+                v.setPadding(0, statusBarInsets.top, 0, bottomInset);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         Toolbar toolbar = findViewById(R.id.toolbarCommenter);
         setSupportActionBar(toolbar);
@@ -82,11 +135,14 @@ public class CommenterActivity extends AppCompatActivity {
 
         postRepository = new PostRepository(this);
         commentRepository = new CommentRepository(this);
+        userRepository = new UserRepository(this);
+        notificationRepository = new NotificationRepository(this);
         sessionManager = new SessionManager(this);
         currentUserId = sessionManager.getUserId();
 
         initViews();
         setupRecyclerView();
+        setupMentionWatcher();
 
         loadPostDetails();
         loadComments();
@@ -119,6 +175,21 @@ public class CommenterActivity extends AppCompatActivity {
 
         etCommentInput = findViewById(R.id.etCommentInput);
         btnSendComment = findViewById(R.id.btnSendComment);
+
+        ibAttachImage = findViewById(R.id.ibAttachImage);
+        layoutCommentImagePreview = findViewById(R.id.layoutCommentImagePreview);
+        imgCommentImagePreview = findViewById(R.id.imgCommentImagePreview);
+        ibCancelCommentImage = findViewById(R.id.ibCancelCommentImage);
+
+        if (ibAttachImage != null) {
+            ibAttachImage.setOnClickListener(v -> commentImagePickerLauncher.launch("image/*"));
+        }
+        if (ibCancelCommentImage != null) {
+            ibCancelCommentImage.setOnClickListener(v -> {
+                selectedCommentImageUri = null;
+                if (layoutCommentImagePreview != null) layoutCommentImagePreview.setVisibility(View.GONE);
+            });
+        }
     }
 
     private void setupRecyclerView() {
@@ -144,9 +215,24 @@ public class CommenterActivity extends AppCompatActivity {
 
             @Override
             public void onUserClick(Comment comment) {
-                Intent intent = new Intent(CommenterActivity.this, PageUtilisateurActivity.class);
-                intent.putExtra("user_id", comment.getUserId());
-                startActivity(intent);
+                td.teladoum.baobab.utils.NavigationHelper.openUserProfile(CommenterActivity.this, comment.getUserId());
+            }
+
+            @Override
+            public void onReportClick(Comment comment) {
+                new AlertDialog.Builder(CommenterActivity.this)
+                        .setTitle("Signaler le commentaire 🚩")
+                        .setMessage("Voulez-vous signaler ce commentaire comme inapproprié ou hors sujet ?")
+                        .setPositiveButton("Signaler", (dialog, which) -> {
+                            boolean reported = commentRepository.reportComment(comment.getId(), currentUserId);
+                            if (reported) {
+                                Toasty.success(CommenterActivity.this, "Commentaire signalé", Toasty.LENGTH_SHORT).show();
+                            } else {
+                                Toasty.warning(CommenterActivity.this, "Erreur lors du signalement", Toasty.LENGTH_SHORT).show();
+                            }
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
             }
         });
         rvComments.setAdapter(commentAdapter);
@@ -173,9 +259,7 @@ public class CommenterActivity extends AppCompatActivity {
         ImageUtils.loadProfileImage(this, currentPost.getAuthorProfileImage(), imgPostAuthorAvatar);
 
         View.OnClickListener postAuthorClickListener = v -> {
-            Intent intent = new Intent(CommenterActivity.this, PageUtilisateurActivity.class);
-            intent.putExtra("user_id", currentPost.getUserId());
-            startActivity(intent);
+            td.teladoum.baobab.utils.NavigationHelper.openUserProfile(CommenterActivity.this, currentPost.getUserId());
         };
         imgPostAuthorAvatar.setOnClickListener(postAuthorClickListener);
         tvPostAuthorName.setOnClickListener(postAuthorClickListener);
@@ -302,7 +386,7 @@ public class CommenterActivity extends AppCompatActivity {
 
         if (ibClose != null) {
             ibClose.bringToFront();
-            ibClose.setOnClickListener(v -> dialog.dismiss());
+            ibClose.setOnClickListener(v -> DialogUtils.safeDismiss(dialog));
         }
 
         dialog.show();
@@ -330,21 +414,128 @@ public class CommenterActivity extends AppCompatActivity {
         layoutReplyingTo.setVisibility(View.GONE);
     }
 
+    private boolean isShowingMentionDialog = false;
+
+    private void setupMentionWatcher() {
+        etCommentInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                int cursor = etCommentInput.getSelectionStart();
+                if (cursor > 0 && s.length() >= cursor) {
+                    String sub = s.subSequence(0, cursor).toString();
+                    int lastAtIndex = sub.lastIndexOf('@');
+                    if (lastAtIndex != -1) {
+                        if (lastAtIndex == 0 || sub.charAt(lastAtIndex - 1) == ' ' || sub.charAt(lastAtIndex - 1) == '\n') {
+                            String query = sub.substring(lastAtIndex + 1).trim();
+                            if (!query.contains(" ") && query.length() >= 0) {
+                                showMentionSuggestions(query, lastAtIndex);
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
+        });
+    }
+
+    private void showMentionSuggestions(String query, int atIndex) {
+        if (isShowingMentionDialog) return;
+        List<User> allUsers = userRepository.getAllUsers();
+        List<User> matches = new ArrayList<>();
+        String qLower = query.toLowerCase(Locale.getDefault());
+        for (User u : allUsers) {
+            if (u.getId() != currentUserId) {
+                String name = u.getName() != null ? u.getName().toLowerCase(Locale.getDefault()) : "";
+                String email = u.getEmail() != null ? u.getEmail().toLowerCase(Locale.getDefault()) : "";
+                if (qLower.isEmpty() || name.contains(qLower) || email.contains(qLower)) {
+                    matches.add(u);
+                }
+            }
+        }
+
+        if (matches.isEmpty()) return;
+
+        isShowingMentionDialog = true;
+        String[] names = new String[matches.size()];
+        for (int i = 0; i < matches.size(); i++) {
+            User u = matches.get(i);
+            names[i] = (u.getName() != null ? u.getName() : u.getEmail()) + (u.isVerified() ? " 🔵" : "");
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Identifier un utilisateur 👤")
+                .setItems(names, (dialog, which) -> {
+                    isShowingMentionDialog = false;
+                    User chosen = matches.get(which);
+                    String chosenName = chosen.getName() != null ? chosen.getName() : "Utilisateur";
+
+                    android.text.Editable editable = etCommentInput.getText();
+                    int cursor = etCommentInput.getSelectionStart();
+                    if (editable != null && cursor >= atIndex) {
+                        editable.replace(atIndex, cursor, chosenName + " ");
+                    }
+                })
+                .setOnDismissListener(dialog -> isShowingMentionDialog = false)
+                .show();
+    }
+
+    private void parseAndNotifyMentions(String commentContent, int postId) {
+        if (commentContent == null) return;
+        List<User> allUsers = userRepository.getAllUsers();
+        User currentUser = userRepository.getUserById(currentUserId);
+        String currentUserName = currentUser != null && currentUser.getName() != null ? currentUser.getName() : "Quelqu'un";
+
+        for (User u : allUsers) {
+            String name = u.getName();
+            if (name != null && !name.trim().isEmpty()) {
+                if (commentContent.contains(name)) {
+                    if (u.getId() != currentUserId) {
+                        notificationRepository.addNotification(
+                                u.getId(),
+                                currentUserId,
+                                "COMMENT_MENTION",
+                                "POST",
+                                postId,
+                                "💬 " + currentUserName + " vous a cité(e) dans un commentaire : \"" + (commentContent.length() > 50 ? commentContent.substring(0, 50) + "..." : commentContent) + "\""
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     private void submitComment() {
         String content = etCommentInput.getText().toString().trim();
-        if (content.isEmpty()) {
+        if (content.isEmpty() && selectedCommentImageUri == null) {
             Toasty.warning(this, getString(R.string.toast_enter_comment), Toasty.LENGTH_SHORT).show();
             return;
         }
 
-        boolean success = commentRepository.addComment(postId, replyingToCommentId, currentUserId, content);
+        if (selectedCommentImageUri != null) {
+            String base64Image = ImageUtils.uriToBase64(this, selectedCommentImageUri);
+            finalizeCommentSubmission(content, base64Image);
+        } else {
+            finalizeCommentSubmission(content, null);
+        }
+    }
+
+    private void finalizeCommentSubmission(String content, String imagePath) {
+        boolean success = commentRepository.addComment(postId, replyingToCommentId, currentUserId, content, imagePath);
         if (success) {
+            parseAndNotifyMentions(content, postId);
             if (!PostRepository.isNetworkAvailable(this)) {
                 Toasty.warning(this, "⚠️ Mode Hors-Ligne : Commentaire enregistré localement !", Toasty.LENGTH_SHORT).show();
             } else {
                 Toasty.success(this, getString(R.string.toast_comment_added), Toasty.LENGTH_SHORT).show();
             }
             etCommentInput.setText("");
+            selectedCommentImageUri = null;
+            if (layoutCommentImagePreview != null) layoutCommentImagePreview.setVisibility(View.GONE);
             cancelReplyMode();
             loadComments();
         } else {

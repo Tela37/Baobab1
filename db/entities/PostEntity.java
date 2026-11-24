@@ -11,6 +11,7 @@ public class PostEntity {
     @PrimaryKey
     public int id;
     public int userId;
+    public int targetUserId;
     public String authorName;
     public String authorProfileImage;
     public String content;
@@ -33,6 +34,7 @@ public class PostEntity {
         PostEntity entity = new PostEntity();
         entity.id = post.getId();
         entity.userId = post.getUserId();
+        entity.targetUserId = post.getTargetUserId();
         entity.authorName = post.getAuthorName();
         entity.authorProfileImage = post.getAuthorProfileImage();
         entity.content = post.getContent();
@@ -52,6 +54,7 @@ public class PostEntity {
 
     public Post toModel() {
         Post p = new Post(id, userId, authorName, authorProfileImage, content, imagePath, videoPath, likesCount, likedByCurrentUser, createdAt);
+        p.setTargetUserId(targetUserId);
         p.setUserReactionType(userReactionType);
         p.setSharesCount(sharesCount);
         p.setCommentsCount(commentsCount);

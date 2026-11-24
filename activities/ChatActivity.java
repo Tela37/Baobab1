@@ -25,8 +25,11 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import td.teladoum.baobab.helpers.DialogUtils;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -78,18 +81,13 @@ public class ChatActivity extends AppCompatActivity {
 
     private EditText etMessage;
     private ImageButton ibAttachImage;
-    private Button btnSend;
-
-    private TextView tvCounter;
-    private ProgressBar progressChars;
+    private ImageButton btnSend;
 
     // Bandeau de réponse ciblée (Quote Reply)
     private LinearLayout layoutReplyBanner;
     private TextView tvReplyTextPreview;
     private ImageButton ibCancelReply;
     private Message replyingToMessage;
-
-    private static final int MAX_CHARS = 500;
 
     private MessageRepository messageRepository;
     private UserRepository userRepository;
@@ -116,7 +114,7 @@ public class ChatActivity extends AppCompatActivity {
                         sendImageMessage(uri);
                     }
                 } else if (result.getError() != null) {
-                    Toasty.error(this, "Erreur lors du recadrage", Toasty.LENGTH_SHORT).show();
+                   // Toasty.error(this, "Auccune image selectionnée", Toasty.LENGTH_SHORT).show();
                 }
             });
 
@@ -141,8 +139,7 @@ public class ChatActivity extends AppCompatActivity {
                         }
                         String captionText = etMessage.getText().toString().trim();
                         Integer replyId = replyingToMessage != null ? replyingToMessage.getId() : null;
-                        String replyText = replyingToMessage != null ?
-                                (replyingToMessage.getMessage() != null && !replyingToMessage.getMessage().isEmpty() ? replyingToMessage.getMessage() : "Photo") : null;
+                        String replyText = replyingToMessage != null ? getFormattedReplyText(replyingToMessage) : null;
 
                         boolean anySuccess = false;
                         for (int i = 0; i < count; i++) {
@@ -163,8 +160,6 @@ public class ChatActivity extends AppCompatActivity {
 
                         if (anySuccess) {
                             etMessage.setText("");
-                            tvCounter.setText("0/500");
-                            progressChars.setProgress(0);
                             cancelQuoteReply();
                             hideKeyboard();
                             loadMessages();
@@ -204,9 +199,9 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void showMediaSelectionOptions() {
-        String[] options = {"📸 Prendre une photo (Recadrage)", "🖼️ Sélectionner plusieurs photos (Jusqu'à 10)", "🎥 Sélectionner et envoyer une vidéo"};
+        String[] options = {"Une photo", "Plusieurs photos", "Une vidéo"};
         new AlertDialog.Builder(this)
-                .setTitle("Joindre un fichier 📎")
+                .setTitle("Envoyer")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
                         launchImageCropper();
@@ -224,8 +219,11 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void sendVideoMessage(String videoPath) {
-        boolean sent = messageRepository.sendVideoMessage(conversationId, sessionManager.getUserId(), videoPath);
+        Integer replyId = replyingToMessage != null ? replyingToMessage.getId() : null;
+        String replyText = replyingToMessage != null ? getFormattedReplyText(replyingToMessage) : null;
+        boolean sent = messageRepository.sendVideoMessage(conversationId, sessionManager.getUserId(), videoPath, replyId, replyText);
         if (sent) {
+            cancelQuoteReply();
             loadMessages();
         }
     }
@@ -250,9 +248,33 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        androidx.activity.EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE);
         setContentView(R.layout.activity_chat);
+
+        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
+        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        if (mainContainer == null) {
+            mainContainer = findViewById(android.R.id.content);
+        }
+        if (mainContainer != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(mainContainer, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                androidx.core.graphics.Insets navBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
+                androidx.core.graphics.Insets imeInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime());
+                int bottomInset = Math.max(navBarInsets.bottom, imeInsets.bottom);
+                v.setPadding(0, statusBarInsets.top, 0, bottomInset);
+                return insets;
+            });
+        }
+
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
+            controller.setAppearanceLightStatusBars(true);
+            controller.setAppearanceLightNavigationBars(true);
+        }
 
         initViews();
 
@@ -268,16 +290,21 @@ public class ChatActivity extends AppCompatActivity {
         setupCharacterCounter();
         readIntentData();
 
-        chatViewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.ChatViewModel.class);
-        chatViewModel.init(this, conversationId, receiverId, sessionManager.getUserId());
-        setupViewModelObservers();
-
         messageList = new ArrayList<>();
 
         adapter = new ChatAdapter(
                 messageList,
                 sessionManager.getUserId(),
                 message -> showMessageOptionsDialog(message),
+                message -> {
+                    String newReaction = "❤️".equals(message.getReaction()) ? null : "❤️";
+                    message.setReaction(newReaction);
+                    messageRepository.setMessageReaction(message.getId(), sessionManager.getUserId(), newReaction);
+                    if (adapter != null) {
+                        adapter.notifyDataSetChanged();
+                    }
+                    loadMessages();
+                },
                 imagePath -> showImagePreviewDialog(imagePath),
                 videoPath -> showVideoPreviewDialog(videoPath),
                 audioPath -> playAudioMessage(audioPath)
@@ -287,6 +314,10 @@ public class ChatActivity extends AppCompatActivity {
         if (adapter != null && receiverProfileImage != null) {
             adapter.setReceiverProfileImage(receiverProfileImage);
         }
+
+        chatViewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.ChatViewModel.class);
+        chatViewModel.init(this, conversationId, receiverId, sessionManager.getUserId());
+        setupViewModelObservers();
 
         loadMessages();
 
@@ -334,15 +365,41 @@ public class ChatActivity extends AppCompatActivity {
         imgChatAvatar = findViewById(R.id.imgChatAvatar);
         viewOnlineIndicator = findViewById(R.id.viewOnlineIndicator);
 
+        View layoutChatHeaderInfo = findViewById(R.id.layoutChatHeaderInfo);
+        if (layoutChatHeaderInfo != null) {
+            layoutChatHeaderInfo.setOnClickListener(v -> openUserProfile());
+        }
+        if (imgChatAvatar != null) {
+            imgChatAvatar.setOnClickListener(v -> openUserProfile());
+        }
+
+        ImageButton ibAudioCall = findViewById(R.id.ibAudioCall);
+        ImageButton ibVideoCall = findViewById(R.id.ibVideoCall);
+
+        if (ibAudioCall != null) {
+            ibAudioCall.setOnClickListener(v -> {
+                Intent callIntent = new Intent(ChatActivity.this, CallActivity.class);
+                callIntent.putExtra("target_name", receiverName != null ? receiverName : "Correspondant");
+                callIntent.putExtra("is_video_call", false);
+                startActivity(callIntent);
+            });
+        }
+
+        if (ibVideoCall != null) {
+            ibVideoCall.setOnClickListener(v -> {
+                Intent callIntent = new Intent(ChatActivity.this, CallActivity.class);
+                callIntent.putExtra("target_name", receiverName != null ? receiverName : "Correspondant");
+                callIntent.putExtra("is_video_call", true);
+                startActivity(callIntent);
+            });
+        }
+
         rvMessages = findViewById(R.id.rvMessages);
 
         etMessage = findViewById(R.id.etMessage);
         ibAttachImage = findViewById(R.id.ibAttachImage);
         ibRecordAudio = findViewById(R.id.ibRecordAudio);
         btnSend = findViewById(R.id.btnSend);
-
-        tvCounter = findViewById(R.id.tvCounter);
-        progressChars = findViewById(R.id.progressChars);
 
         layoutReplyBanner = findViewById(R.id.layoutReplyBanner);
         tvReplyTextPreview = findViewById(R.id.tvReplyTextPreview);
@@ -360,6 +417,18 @@ public class ChatActivity extends AppCompatActivity {
                     stopAndSendAudioMessage();
                 }
             });
+        }
+    }
+
+    private void openUserProfile() {
+        if (receiverId != -1) {
+            Intent intent = new Intent(ChatActivity.this, User2ProfileActivity.class);
+            intent.putExtra("user_id", receiverId);
+            intent.putExtra("user_name", receiverName);
+            intent.putExtra("user_profile_image", receiverProfileImage);
+            startActivity(intent);
+        } else {
+            Toasty.info(this, "Profil utilisateur non disponible", Toasty.LENGTH_SHORT).show();
         }
     }
 
@@ -401,8 +470,11 @@ public class ChatActivity extends AppCompatActivity {
             if (ibRecordAudio != null) ibRecordAudio.setImageResource(android.R.drawable.ic_btn_speak_now);
 
             if (currentAudioRecordingPath != null) {
-                boolean sent = messageRepository.sendAudioMessage(conversationId, sessionManager.getUserId(), currentAudioRecordingPath);
+                Integer replyId = replyingToMessage != null ? replyingToMessage.getId() : null;
+                String replyText = replyingToMessage != null ? getFormattedReplyText(replyingToMessage) : null;
+                boolean sent = messageRepository.sendAudioMessage(conversationId, sessionManager.getUserId(), currentAudioRecordingPath, replyId, replyText);
                 if (sent) {
+                    cancelQuoteReply();
                     loadMessages();
                     Toasty.success(this, "Message vocal envoyé", Toast.LENGTH_SHORT).show();
                 }
@@ -613,11 +685,7 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 int length = s.length();
-                tvCounter.setText(length + "/" + MAX_CHARS);
-                progressChars.setProgress(length);
-                btnSend.setEnabled(length <= MAX_CHARS);
-
-                // Publication du statut de saisie de l'expéditeur vers Firebase Realtime Database
+                // Publication du statut de saisie vers Firebase Realtime Database
                 if (conversationId != -1 && sessionManager != null) {
                     FirebaseDatabase.getInstance().getReference("conversations")
                             .child(String.valueOf(conversationId))
@@ -641,8 +709,7 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         Integer replyId = replyingToMessage != null ? replyingToMessage.getId() : null;
-        String replyText = replyingToMessage != null ?
-                (replyingToMessage.getMessage() != null && !replyingToMessage.getMessage().isEmpty() ? replyingToMessage.getMessage() : "Photo") : null;
+        String replyText = replyingToMessage != null ? getFormattedReplyText(replyingToMessage) : null;
 
         boolean success = messageRepository.sendMessage(
                 conversationId,
@@ -666,13 +733,11 @@ public class ChatActivity extends AppCompatActivity {
                         .setValue(false);
             }
             etMessage.setText("");
-            tvCounter.setText("0/500");
-            progressChars.setProgress(0);
             cancelQuoteReply();
             hideKeyboard();
             loadMessages();
         } else {
-            Toasty.warning(this, "Erreur lors de l'envoi", Toasty.LENGTH_SHORT).show();
+            Toasty.warning(this, "Erreur lors de l'envoi", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -680,15 +745,14 @@ public class ChatActivity extends AppCompatActivity {
         String base64Image = ImageUtils.uriToBase64(this, imageUri);
         String savedPath = base64Image != null && !base64Image.trim().isEmpty() ? base64Image : ImageUtils.saveImageToInternalStorage(this, imageUri);
         if (savedPath == null) {
-            Toasty.warning(this, "Erreur lors de la préparation de l'image", Toasty.LENGTH_SHORT).show();
+            Toasty.warning(this, "Erreur lors de la préparation de l'image", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String captionText = etMessage.getText().toString().trim();
 
         Integer replyId = replyingToMessage != null ? replyingToMessage.getId() : null;
-        String replyText = replyingToMessage != null ?
-                (replyingToMessage.getMessage() != null && !replyingToMessage.getMessage().isEmpty() ? replyingToMessage.getMessage() : "Photo") : null;
+        String replyText = replyingToMessage != null ? getFormattedReplyText(replyingToMessage) : null;
 
         boolean success = messageRepository.sendMessage(
                 conversationId,
@@ -701,13 +765,11 @@ public class ChatActivity extends AppCompatActivity {
 
         if (success) {
             etMessage.setText("");
-            tvCounter.setText("0/500");
-            progressChars.setProgress(0);
             cancelQuoteReply();
             hideKeyboard();
             loadMessages();
         } else {
-            Toasty.warning(this, "Erreur lors de l'envoi de l'image", Toasty.LENGTH_SHORT).show();
+            Toasty.warning(this, "Erreur lors de l'envoi de l'image", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -721,6 +783,7 @@ public class ChatActivity extends AppCompatActivity {
         optionsList.add("👍 Réaction Pouce");
         optionsList.add("↩ Répondre au message (Citer)");
         optionsList.add("🌐 Traduire le message (IA Gemini)");
+        optionsList.add("↗️ Transférer le message");
 
         if (message.getSenderId() == sessionManager.getUserId()) {
             if (TimeUtils.isWithinHours(message.getCreatedAt(), 1)) {
@@ -734,27 +797,79 @@ public class ChatActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Options du message")
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        messageRepository.setMessageReaction(message.getId(), "❤️");
+                    String selectedOption = options[which];
+                    if (selectedOption.contains("Réaction Coeur")) {
+                        message.setReaction("❤️");
+                        messageRepository.setMessageReaction(message.getId(), sessionManager.getUserId(), "❤️");
+                        if (adapter != null) adapter.notifyDataSetChanged();
                         loadMessages();
-                    } else if (which == 1) {
-                        messageRepository.setMessageReaction(message.getId(), "😂");
+                    } else if (selectedOption.contains("Réaction Rire")) {
+                        message.setReaction("😂");
+                        messageRepository.setMessageReaction(message.getId(), sessionManager.getUserId(), "😂");
+                        if (adapter != null) adapter.notifyDataSetChanged();
                         loadMessages();
-                    } else if (which == 2) {
-                        messageRepository.setMessageReaction(message.getId(), "👍");
+                    } else if (selectedOption.contains("Réaction Pouce")) {
+                        message.setReaction("👍");
+                        messageRepository.setMessageReaction(message.getId(), sessionManager.getUserId(), "👍");
+                        if (adapter != null) adapter.notifyDataSetChanged();
                         loadMessages();
-                    } else if (which == 3) {
+                    } else if (selectedOption.contains("Répondre")) {
                         setupQuoteReply(message);
-                    } else if (which == 4) {
+                    } else if (selectedOption.contains("Traduire")) {
                         GeminiHelper.showTranslateDialog(this, message.getMessage());
-                    } else if (which == 5) {
-                        if (message.getSenderId() == sessionManager.getUserId()) {
-                            showEditMessageDialog(message);
-                        } else {
-                            deleteMessageAction(message);
-                        }
-                    } else if (which == 6) {
+                    } else if (selectedOption.contains("Transférer")) {
+                        showForwardTargetDialog(message);
+                    } else if (selectedOption.contains("Modifier")) {
+                        showEditMessageDialog(message);
+                    } else if (selectedOption.contains("Supprimer")) {
                         deleteMessageAction(message);
+                    }
+                })
+                .show();
+    }
+
+    private void showForwardTargetDialog(Message message) {
+        UserRepository uRepo = new UserRepository(this);
+        td.teladoum.baobab.repositories.GroupRepository gRepo = new td.teladoum.baobab.repositories.GroupRepository(this);
+        MessageRepository mRepo = new MessageRepository(this);
+
+        List<User> users = uRepo.getAllUsersExcept(sessionManager.getUserId());
+        List<td.teladoum.baobab.models.Group> groups = gRepo.getUserGroups(sessionManager.getUserId());
+
+        List<String> targetNames = new ArrayList<>();
+        List<Object> targets = new ArrayList<>();
+
+        for (User u : users) {
+            targetNames.add("👤 " + (u.getName() != null ? u.getName() : u.getEmail()));
+            targets.add(u);
+        }
+        for (td.teladoum.baobab.models.Group g : groups) {
+            targetNames.add("👥 [Groupe] " + g.getName());
+            targets.add(g);
+        }
+
+        if (targetNames.isEmpty()) {
+            Toasty.info(this, "Aucun destinataire disponible pour le transfert", Toasty.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] namesArr = targetNames.toArray(new String[0]);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Transférer le message vers...")
+                .setItems(namesArr, (dialog, which) -> {
+                    Object target = targets.get(which);
+                    String forwardText = "---------- Message transféré ----------\n" + (message.getMessage() != null ? message.getMessage() : "");
+
+                    if (target instanceof User) {
+                        User destUser = (User) target;
+                        int destConvId = conversationRepository.createConversationIfNotExists(sessionManager.getUserId(), destUser.getId());
+                        mRepo.sendMessage(destConvId, sessionManager.getUserId(), forwardText, message.getImagePath());
+                        Toasty.success(ChatActivity.this, "Message transféré à " + destUser.getName() + " 🚀", Toasty.LENGTH_SHORT).show();
+                    } else if (target instanceof td.teladoum.baobab.models.Group) {
+                        td.teladoum.baobab.models.Group destGroup = (td.teladoum.baobab.models.Group) target;
+                        gRepo.sendGroupMessage(destGroup.getId(), sessionManager.getUserId(), forwardText, message.getImagePath());
+                        Toasty.success(ChatActivity.this, "Message partagé dans le groupe " + destGroup.getName() + " 🚀", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .show();
@@ -794,12 +909,20 @@ public class ChatActivity extends AppCompatActivity {
                 .show();
     }
 
+    private String getFormattedReplyText(Message message) {
+        if (message == null) return null;
+        String author = (message.getSenderId() == sessionManager.getUserId()) ? "Vous" : (receiverName != null ? receiverName : "Interlocuteur");
+        String snippet = (message.getMessage() != null && !message.getMessage().isEmpty()) 
+                ? message.getMessage() 
+                : (message.getImagePath() != null ? "Photo 📷" : (message.getVideoPath() != null ? "Vidéo 🎥" : "Message"));
+        return author + " : " + snippet;
+    }
+
     private void setupQuoteReply(Message message) {
         replyingToMessage = message;
         if (layoutReplyBanner != null && tvReplyTextPreview != null) {
             layoutReplyBanner.setVisibility(View.VISIBLE);
-            String snippet = message.getMessage() != null && !message.getMessage().isEmpty() ? message.getMessage() : "Photo";
-            tvReplyTextPreview.setText("Réponse à : " + snippet);
+            tvReplyTextPreview.setText("Réponse à " + getFormattedReplyText(message));
         }
     }
 
@@ -813,8 +936,9 @@ public class ChatActivity extends AppCompatActivity {
     private void showImagePreviewDialog(String imagePath) {
         if (imagePath == null || imagePath.trim().isEmpty()) return;
 
-        if (activeImageDialog != null && activeImageDialog.isShowing()) {
-            activeImageDialog.dismiss();
+        if (activeImageDialog != null) {
+            DialogUtils.safeDismiss(activeImageDialog);
+            activeImageDialog = null;
         }
 
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_image_preview, null);
@@ -833,16 +957,12 @@ public class ChatActivity extends AppCompatActivity {
                 .create();
 
         if (ibClose != null) {
-            ibClose.setOnClickListener(v -> {
-                if (activeImageDialog != null) activeImageDialog.dismiss();
-            });
+            ibClose.setOnClickListener(v -> DialogUtils.safeDismiss(activeImageDialog));
         }
         if (ibShare != null) {
             ibShare.setOnClickListener(v -> showShareImageToFriendsDialog(imagePath));
         }
-        dialogView.setOnClickListener(v -> {
-            if (activeImageDialog != null) activeImageDialog.dismiss();
-        });
+        dialogView.setOnClickListener(v -> DialogUtils.safeDismiss(activeImageDialog));
         activeImageDialog.setOnDismissListener(d -> activeImageDialog = null);
         activeImageDialog.show();
     }
@@ -850,7 +970,7 @@ public class ChatActivity extends AppCompatActivity {
     private void showShareImageToFriendsDialog(String imagePath) {
         UserRepository userRepository = new UserRepository(this);
         List<User> users = userRepository.getAllUsersExcept(sessionManager.getUserId());
-        if (users.isEmpty()) {
+        if (users == null || users.isEmpty()) {
             Toasty.info(this, "Aucun utilisateur à qui partager", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -877,6 +997,8 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void loadMessages() {
+        if (sessionManager == null || messageRepository == null) return;
+
         // 1. Ne marquer comme lu en BDD que s'il y a des messages non lus
         if (messageRepository.getUnreadCount(conversationId, sessionManager.getUserId()) > 0) {
             messageRepository.markMessagesAsRead(conversationId, sessionManager.getUserId());
@@ -892,9 +1014,16 @@ public class ChatActivity extends AppCompatActivity {
 
         boolean wasAtBottom = isScrolledToBottom();
 
+        if (messageList == null) {
+            messageList = new ArrayList<>();
+        }
         messageList.clear();
-        messageList.addAll(newMessages);
-        adapter.notifyDataSetChanged();
+        if (newMessages != null) {
+            messageList.addAll(newMessages);
+        }
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
 
         if (wasAtBottom) {
             scrollToBottom();
@@ -902,28 +1031,40 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private boolean isMessageListIdentical(List<Message> oldList, List<Message> newList) {
+        if (oldList == null && newList == null) {
+            return true;
+        }
+        if (oldList == null || newList == null) {
+            return false;
+        }
         if (oldList.size() != newList.size()) {
             return false;
         }
-        if (oldList.isEmpty()) {
-            return true;
+        for (int i = 0; i < oldList.size(); i++) {
+            Message mOld = oldList.get(i);
+            Message mNew = newList.get(i);
+            if (mOld == null || mNew == null) {
+                if (mOld != mNew) return false;
+                continue;
+            }
+            if (mOld.getId() != mNew.getId() ||
+                mOld.isRead() != mNew.isRead() ||
+                mOld.isDeleted() != mNew.isDeleted() ||
+                !safeEquals(mOld.getMessage(), mNew.getMessage()) ||
+                !safeEquals(mOld.getReaction(), mNew.getReaction())) {
+                return false;
+            }
         }
+        return true;
+    }
 
-        Message lastOld = oldList.get(oldList.size() - 1);
-        Message lastNew = newList.get(newList.size() - 1);
-
-        if (lastOld.getId() != lastNew.getId() || lastOld.isRead() != lastNew.isRead()) {
-            return false;
-        }
-
-        String reactOld = lastOld.getReaction() != null ? lastOld.getReaction() : "";
-        String reactNew = lastNew.getReaction() != null ? lastNew.getReaction() : "";
-
-        return reactOld.equals(reactNew);
+    private boolean safeEquals(String a, String b) {
+        if (a == null) return b == null;
+        return a.equals(b);
     }
 
     private boolean isScrolledToBottom() {
-        if (rvMessages == null || rvMessages.getAdapter() == null || messageList.isEmpty()) {
+        if (rvMessages == null || rvMessages.getAdapter() == null || messageList == null || messageList.isEmpty()) {
             return true;
         }
         LinearLayoutManager layoutManager = (LinearLayoutManager) rvMessages.getLayoutManager();
@@ -934,7 +1075,7 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void scrollToBottom() {
-        if (!messageList.isEmpty()) {
+        if (messageList != null && !messageList.isEmpty()) {
             rvMessages.post(() -> rvMessages.smoothScrollToPosition(messageList.size() - 1));
         }
     }
@@ -987,8 +1128,6 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0, 3004, 0, "✨ Résumé IA (150 msgs)");
-        menu.add(0, 3002, 0, "📞 Appel vocal");
-        menu.add(0, 3003, 0, "📹 Appel vidéo");
         menu.add(0, 3001, 0, "🗑️ Supprimer la conversation");
         return true;
     }
@@ -1000,18 +1139,6 @@ public class ChatActivity extends AppCompatActivity {
             return true;
         } else if (item.getItemId() == 3004) {
             summarizeChatWithAi();
-            return true;
-        } else if (item.getItemId() == 3002) {
-            Intent callIntent = new Intent(ChatActivity.this, CallActivity.class);
-            callIntent.putExtra("target_name", receiverName != null ? receiverName : "Correspondant");
-            callIntent.putExtra("is_video_call", false);
-            startActivity(callIntent);
-            return true;
-        } else if (item.getItemId() == 3003) {
-            Intent callIntent = new Intent(ChatActivity.this, CallActivity.class);
-            callIntent.putExtra("target_name", receiverName != null ? receiverName : "Correspondant");
-            callIntent.putExtra("is_video_call", true);
-            startActivity(callIntent);
             return true;
         } else if (item.getItemId() == 3001) {
             new AlertDialog.Builder(this)
@@ -1049,7 +1176,7 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         Toasty.info(this, "Génération du résumé IA Gemini...", Toasty.LENGTH_SHORT).show();
-        GeminiHelper.summarizeChatMessages(formattedMsgs, new GeminiHelper.AiCallback() {
+        GeminiHelper.summarizeChatMessages(this, formattedMsgs, new GeminiHelper.AiCallback() {
             @Override
             public void onSuccess(String result) {
                 new AlertDialog.Builder(ChatActivity.this)
@@ -1068,16 +1195,11 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override
     public void finish() {
-        if (isFinishingAdShown || isFinishing() || isDestroyed()) {
-            super.finish();
-            return;
-        }
-        isFinishingAdShown = true;
-        if (activeImageDialog != null && activeImageDialog.isShowing()) {
-            activeImageDialog.dismiss();
+        if (activeImageDialog != null) {
+            DialogUtils.safeDismiss(activeImageDialog);
             activeImageDialog = null;
         }
-        AdMobManager.showInterstitialAd(this, super::finish);
+        super.finish();
     }
 
     @Override
@@ -1091,8 +1213,8 @@ public class ChatActivity extends AppCompatActivity {
                     .child(String.valueOf(receiverId))
                     .removeEventListener(receiverPresenceListener);
         }
-        if (activeImageDialog != null && activeImageDialog.isShowing()) {
-            activeImageDialog.dismiss();
+        if (activeImageDialog != null) {
+            DialogUtils.safeDismiss(activeImageDialog);
             activeImageDialog = null;
         }
     }

@@ -13,6 +13,7 @@ public class Comment {
     private String authorName;
     private String authorProfileImage;
     private String content;
+    private String imagePath;
     private int likesCount;
     private boolean isLikedByCurrentUser;
     private String userReactionType;
@@ -129,6 +130,14 @@ public class Comment {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 }
 

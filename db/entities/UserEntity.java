@@ -14,6 +14,7 @@ public class UserEntity {
     public String phone;
     public String email;
     public String profileImage;
+    public String coverImage;
     public String gender;
     public String dob;
     public String city;
@@ -22,6 +23,7 @@ public class UserEntity {
     public String lastSeen;
     public boolean isSuspended;
     public boolean isAdmin;
+    public boolean isVerified;
 
     public UserEntity() {}
 
@@ -33,6 +35,7 @@ public class UserEntity {
         entity.phone = user.getPhone();
         entity.email = user.getEmail();
         entity.profileImage = user.getProfileImage();
+        entity.coverImage = user.getCoverImage();
         entity.gender = user.getGender();
         entity.dob = user.getDob();
         entity.city = user.getCity();
@@ -41,11 +44,13 @@ public class UserEntity {
         entity.lastSeen = user.getLastSeen();
         entity.isSuspended = user.isSuspended();
         entity.isAdmin = user.isAdmin();
+        entity.isVerified = user.isVerified();
         return entity;
     }
 
     public User toModel() {
         User u = new User(id, name, phone, email, null, profileImage);
+        u.setCoverImage(coverImage);
         u.setGender(gender);
         u.setDob(dob);
         u.setCity(city);
@@ -54,6 +59,7 @@ public class UserEntity {
         u.setLastSeen(lastSeen);
         u.setSuspended(isSuspended);
         u.setAdmin(isAdmin);
+        u.setVerified(isVerified);
         return u;
     }
 }

@@ -34,6 +34,10 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     public void updateNotifications(List<AppNotification> newNotifications) {
         if (newNotifications == null) return;
+        if (newNotifications == this.notificationList) {
+            notifyDataSetChanged();
+            return;
+        }
         androidx.recyclerview.widget.DiffUtil.DiffResult diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(new NotificationDiffCallback(this.notificationList, newNotifications));
         this.notificationList.clear();
         this.notificationList.addAll(newNotifications);
