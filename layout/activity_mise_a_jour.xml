@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/register"
+    android:clipToPadding="false"
     android:fillViewport="true"
     tools:layout_editor_absoluteX="1dp"
     tools:layout_editor_absoluteY="1dp">
@@ -12,8 +13,10 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:clipToPadding="false"
         android:gravity="center"
         android:orientation="vertical"
+        android:paddingBottom="120dp"
         tools:context=".Mise_a_jour_Activity">
 
         <androidx.appcompat.widget.Toolbar

@@ -14,7 +14,7 @@
         android:layout_height="24dp"
         android:layout_gravity="center"
         android:contentDescription="Notifications"
-        android:src="@android:drawable/ic_popup_reminder"
+        android:src="@drawable/ic_notifications"
         app:tint="#FFFFFF" />
 
     <TextView

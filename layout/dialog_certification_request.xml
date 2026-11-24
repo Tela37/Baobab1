@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Demande de Certification Officielle 🌟"
+            android:textColor="#2E7D32"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Veuillez remplir le formulaire ci-dessous avec vos informations et joindre les justificatifs requis."
+            android:textColor="#555555"
+            android:textSize="13sp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- (a) Nom et prénom sur le document -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCertFullName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Nom et prénom sur le document"
+                android:inputType="textPersonName"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- (b) Type de document -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Type de document d'identité :"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <Spinner
+            android:id="@+id/spinnerDocType"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="@android:drawable/btn_dropdown"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- (c) Numéro du document -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCertDocNumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Numéro du document"
+                android:inputType="text"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- (5) Recto-verso du document -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Pièce d'identité (Recto &amp; Verso) :"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <Button
+                android:id="@+id/btnCertRecto"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="📷 Photo Recto"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_marginEnd="6dp"
+                android:textAllCaps="false"/>
+
+            <Button
+                android:id="@+id/btnCertVerso"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="📷 Photo Verso"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_marginStart="6dp"
+                android:textAllCaps="false"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvCertFilesStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Fichiers sélectionnés : Recto (0), Verso (0)"
+            android:textColor="#2E7D32"
+            android:textSize="12sp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- (6) Selfie photo en temps réel -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Selfie photo en temps réel :"
+            android:textColor="#333333"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnCertSelfie"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📸 Prendre un Selfie en direct"
+            style="?attr/materialButtonOutlinedStyle"
+            android:textAllCaps="false"
+            android:layout_marginBottom="8dp"/>
+
+        <ImageView
+            android:id="@+id/imgCertSelfiePreview"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:scaleType="centerCrop"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp"
+            android:background="#DDDDDD"
+            android:contentDescription="Aperçu selfie"/>
+
+    </LinearLayout>
+</ScrollView>

@@ -3,7 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:orientation="vertical">
 
     <!-- Barre du haut -->
@@ -18,75 +17,106 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginEnd="48dp"
+            android:layout_marginEnd="8dp"
             android:baselineAligned="false"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <FrameLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="10dp">
-
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/imgChatAvatar"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_profile"
-                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
-
-                <View
-                    android:id="@+id/viewOnlineIndicator"
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:layout_gravity="bottom|end"
-                    android:background="@drawable/shape_online_dot"
-                    android:visibility="gone" />
-
-            </FrameLayout>
-
             <LinearLayout
+                android:id="@+id/layoutChatHeaderInfo"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:orientation="vertical">
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/tvChatName"
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/imgChatAvatar"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_profile"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+                    <View
+                        android:id="@+id/viewOnlineIndicator"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:layout_gravity="bottom|end"
+                        android:background="@drawable/shape_online_dot"
+                        android:visibility="gone" />
+
+                </FrameLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:singleLine="true"
-                    android:text="Discussion"
-                    android:textColor="#FFFFFF"
-                    android:textSize="17sp"
-                    android:textStyle="bold" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvUserStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:singleLine="true"
-                    android:text="En ligne"
-                    android:textColor="#E0E0E0"
-                    android:textSize="11sp"
-                    android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/tvChatName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:singleLine="true"
+                        android:text="Discussion"
+                        android:textColor="#FFFFFF"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvTypingIndicator"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:singleLine="true"
-                    android:text="En train d'écrire..."
-                    android:textColor="#E0E0E0"
-                    android:textSize="11sp"
-                    android:textStyle="italic"
-                    android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/tvUserStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:singleLine="true"
+                        android:text="En ligne"
+                        android:textColor="#E0E0E0"
+                        android:textSize="11sp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvTypingIndicator"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:singleLine="true"
+                        android:text="En train d'écrire..."
+                        android:textColor="#E0E0E0"
+                        android:textSize="11sp"
+                        android:textStyle="italic"
+                        android:visibility="gone" />
+
+                </LinearLayout>
 
             </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/ibAudioCall"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Appel audio"
+                android:padding="8dp"
+                android:src="@android:drawable/ic_menu_call"
+                app:tint="#FFFFFF" />
+
+            <ImageButton
+                android:id="@+id/ibVideoCall"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Appel vidéo"
+                android:padding="8dp"
+                android:src="@drawable/ic_videocam"
+                app:tint="#FFFFFF" />
 
         </LinearLayout>
 
@@ -103,13 +133,13 @@
         android:padding="8dp"
         android:scrollbars="vertical" />
 
-    <!-- Zone de saisie -->
+    <!-- Zone de saisie Messenger Style -->
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
-        android:elevation="6dp"
+        android:background="?attr/colorSurface"
+        android:elevation="8dp"
         android:orientation="vertical"
         android:padding="8dp">
 
@@ -118,10 +148,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="6dp"
-            android:background="#F0F0F0"
+            android:background="?attr/colorSurfaceVariant"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="6dp"
+            android:padding="8dp"
             android:visibility="gone">
 
             <TextView
@@ -131,7 +161,7 @@
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="2"
-                android:textColor="#333333"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="13sp"
                 android:textStyle="italic" />
 
@@ -141,7 +171,8 @@
                 android:layout_height="32dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Annuler la réponse"
-                android:src="@android:drawable/ic_menu_close_clear_cancel" />
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                app:tint="?attr/colorOnSurface" />
 
         </LinearLayout>
 
@@ -153,18 +184,22 @@
 
             <ImageButton
                 android:id="@+id/ibAttachImage"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Joindre une photo"
-                android:src="@android:drawable/ic_menu_camera" />
+                android:padding="8dp"
+                android:src="@android:drawable/ic_menu_gallery"
+                app:tint="#2196F3" />
 
             <ImageButton
                 android:id="@+id/ibRecordAudio"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Enregistrer un message vocal"
+                android:contentDescription="Message vocal"
+                android:padding="8dp"
                 android:src="@drawable/mic"
                 app:tint="#2196F3" />
 
@@ -172,54 +207,27 @@
                 android:id="@+id/etMessage"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_margin="3dp"
+                android:layout_marginHorizontal="8dp"
                 android:layout_weight="1"
-                android:background="@drawable/input"
-                android:elevation="5dp"
-                android:gravity="top|start"
-                android:hint="Message"
+                android:background="@drawable/comment_input_background"
+                android:hint="Aa"
+                android:inputType="textLongMessage|textMultiLine"
+                android:maxLines="4"
                 android:padding="10dp"
-                android:paddingStart="10dp"
-                android:paddingEnd="5dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/grey" />
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp" />
 
-        </LinearLayout>
-
-        <!-- Barre de progression -->
-
-        <ProgressBar
-            android:id="@+id/progressChars"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="6dp"
-            android:layout_marginTop="4dp"
-            android:max="500"
-            android:progress="0" />
-
-        <!-- Compteur + bouton -->
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tvCounter"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="0/500"
-                android:textColor="#666666"
-                android:textSize="12sp" />
-
-            <Button
+            <ImageButton
                 android:id="@+id/btnSend"
-                android:layout_width="wrap_content"
-                android:layout_height="48dp"
-                android:text="Envoyer" />
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="@drawable/circle_background"
+                android:backgroundTint="#2196F3"
+                android:contentDescription="Envoyer"
+                android:padding="10dp"
+                android:src="@android:drawable/ic_menu_send"
+                app:tint="#FFFFFF" />
 
         </LinearLayout>
 

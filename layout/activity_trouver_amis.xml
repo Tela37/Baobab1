@@ -10,6 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="#2E7D32"
+        app:navigationIconTint="#FFFFFF"
         app:title="Trouver des Amis"
         app:titleTextColor="#FFFFFF" />
 
@@ -25,7 +26,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:backgroundTint="#2E7D32"
-            android:text="📱 Synchroniser les contacts du téléphone"
+            android:text="Synchroniser les contacts du téléphone"
             android:textColor="#FFFFFF" />
 
         <EditText

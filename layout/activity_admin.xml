@@ -18,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="#FFFFFF"
+        android:background="?attr/colorSurface"
         android:elevation="2dp"
         android:padding="8dp">
 
@@ -58,7 +58,6 @@
         android:id="@+id/btnPublishUpdate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
         android:backgroundTint="#1976D2"
         android:text="@string/admin_publierUpdate"
         android:textColor="#FFFFFF" />
@@ -72,13 +71,23 @@
         android:text="@string/publier_une_annonce"
         android:textColor="#FFFFFF" />
 
+    <Button
+        android:id="@+id/btnManageBlueBadges"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="8dp"
+        android:layout_marginBottom="8dp"
+        android:backgroundTint="#0288D1"
+        android:text="🛡️ Gérer les badges bleus (Vérifiés &amp; Demandes)"
+        android:textColor="#FFFFFF" />
+
     <!-- Carte d'annonce active avec options Modifier / Supprimer -->
     <LinearLayout
         android:id="@+id/layoutExistingAnnouncement"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
-        android:background="#FFFFFF"
+        android:background="?attr/colorSurface"
         android:elevation="2dp"
         android:orientation="vertical"
         android:padding="12dp"
@@ -97,7 +106,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginVertical="6dp"
-            android:textColor="#333333"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="15sp" />
 
         <LinearLayout
@@ -112,7 +121,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="4dp"
                 android:layout_weight="1"
-                android:text="✏️ Modifier"
+                android:text="Modifier"
                 android:textSize="13sp" />
 
             <Button
@@ -122,32 +131,24 @@
                 android:layout_marginStart="4dp"
                 android:layout_weight="1"
                 android:backgroundTint="#B71C1C"
-                android:text="🗑️ Supprimer"
+                android:text="Supprimer"
                 android:textColor="#FFFFFF"
                 android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
 
-    <Button
-        android:id="@+id/btnPublishVideo"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="8dp"
-        android:layout_marginBottom="8dp"
-        android:backgroundTint="#2E7D32"
-        android:text="@string/publish_video_action"
-        android:textColor="#FFFFFF" />
+
 
     <TextView
         android:id="@+id/tvAdminStats"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
-        android:background="#FFFFFF"
+        android:background="?attr/colorSurface"
         android:elevation="1dp"
         android:padding="12dp"
         android:text="Statistiques : Chargement..."
-        android:textColor="#333333"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="14sp"
         android:textStyle="bold" />
 
@@ -155,7 +156,7 @@
         android:id="@+id/switchSuperAdminControls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
+        android:background="?attr/colorSurface"
         android:paddingHorizontal="16dp"
         android:paddingVertical="8dp"
         android:text="@string/switch_show_admin_controls"

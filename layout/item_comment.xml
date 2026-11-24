@@ -49,6 +49,16 @@
                 android:textColor="#333333"
                 android:textSize="14sp" />
 
+            <ImageView
+                android:id="@+id/imgCommentImage"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:layout_marginTop="8dp"
+                android:adjustViewBounds="true"
+                android:contentDescription="Image du commentaire"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+
         </LinearLayout>
 
     </LinearLayout>
@@ -97,6 +107,16 @@
             android:layout_marginStart="4dp"
             android:text="0"
             android:textColor="#777777"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tvReportComment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:padding="4dp"
+            android:text="Signaler"
+            android:textColor="#E53935"
             android:textSize="12sp" />
 
     </LinearLayout>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -54,8 +55,8 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
                             android:layout_marginStart="12dp"
+                            android:layout_weight="1"
                             android:orientation="vertical">
 
                             <TextView
@@ -98,9 +99,9 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="#EEEEEE"
                         android:layout_marginTop="12dp"
-                        android:layout_marginBottom="8dp" />
+                        android:layout_marginBottom="8dp"
+                        android:background="#EEEEEE" />
 
                     <!-- Actions de la publication -->
                     <LinearLayout
@@ -115,8 +116,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="36dp"
                             android:paddingHorizontal="8dp"
-                            android:textSize="12sp"
-                            android:text="❤️ J'aime" />
+                            android:text="❤️ J'aime"
+                            android:textSize="12sp" />
 
                         <Button
                             android:id="@+id/btnSharePost"
@@ -125,8 +126,8 @@
                             android:layout_height="36dp"
                             android:layout_marginStart="6dp"
                             android:paddingHorizontal="8dp"
-                            android:textSize="12sp"
-                            android:text="↗️ Partager" />
+                            android:text="Partager"
+                            android:textSize="12sp" />
 
                         <Button
                             android:id="@+id/btnReportPost"
@@ -135,8 +136,8 @@
                             android:layout_height="36dp"
                             android:layout_marginStart="6dp"
                             android:paddingHorizontal="8dp"
-                            android:textSize="12sp"
-                            android:text="🚩 Signaler" />
+                            android:text="🚩 Signaler"
+                            android:textSize="12sp" />
 
                     </LinearLayout>
 
@@ -159,7 +160,9 @@
                 android:id="@+id/rvComments"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
+                android:nestedScrollingEnabled="false"
+                tools:itemCount="1"
+                tools:listitem="@layout/item_comment" />
 
         </LinearLayout>
 
@@ -213,19 +216,57 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <!-- Aperçu de l'image sélectionnée pour le commentaire -->
+            <RelativeLayout
+                android:id="@+id/layoutCommentImagePreview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/imgCommentImagePreview"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="Aperçu image"
+                    android:scaleType="centerCrop" />
+
+                <ImageButton
+                    android:id="@+id/ibCancelCommentImage"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_alignTop="@id/imgCommentImagePreview"
+                    android:layout_alignEnd="@id/imgCommentImagePreview"
+                    android:background="@android:color/black"
+                    android:contentDescription="Supprimer l'image"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    app:tint="#FFFFFF" />
+            </RelativeLayout>
+
             <EditText
                 android:id="@+id/etCommentInput"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:background="@drawable/bg_et"
                 android:gravity="top|start"
                 android:hint="Écrire un commentaire..."
                 android:inputType="textCapSentences|textMultiLine"
                 android:maxLines="4"
                 android:minHeight="48dp"
-                android:background="@drawable/bg_et"
                 android:padding="10dp"
                 android:textSize="14sp" />
+
+            <ImageButton
+                android:id="@+id/ibAttachImage"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Joindre une image"
+                android:src="@android:drawable/ic_menu_gallery"
+                app:tint="#2196F3" />
 
             <ImageButton
                 android:id="@+id/btnSendComment"
@@ -237,7 +278,5 @@
                 app:tint="#2196F3" />
 
         </LinearLayout>
-
     </LinearLayout>
-
 </LinearLayout>

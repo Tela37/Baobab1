@@ -3,14 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clipToPadding="false"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:clipToPadding="false"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:padding="10dp"
+        android:paddingBottom="120dp">
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/imgRegisterLogo"
@@ -40,7 +43,7 @@
             android:layout_marginVertical="5dp"
             android:background="@drawable/bg_et"
             android:drawablePadding="7dp"
-            android:hint="Email"
+            android:hint="@string/hint_email_telephone"
             android:inputType="textEmailAddress"
             android:padding="15sp"
             android:paddingStart="10dp"
@@ -64,7 +67,7 @@
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
             android:textColor="@color/black"
-            android:textColorHint="@color/grey"
+            android:textColorHint="@color/text_hint_color"
             app:drawableStartCompat="@drawable/custom_pass_input" />
 
         <EditText
@@ -83,7 +86,7 @@
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
             android:textColor="@color/black"
-            android:textColorHint="@color/grey"
+            android:textColorHint="@color/text_hint_color"
             app:drawableStartCompat="@drawable/custom_pass_input" />
 
         <CheckBox
