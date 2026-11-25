@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_search"
+        android:title="@string/action_search"
+        android:icon="@android:drawable/ic_menu_search"
+        app:actionViewClass="androidx.appcompat.widget.SearchView"
+        app:showAsAction="always|collapseActionView" />
+
+    <item
+        android:id="@+id/action_notifications"
+        android:title="Notifications"
+        android:icon="@drawable/ic_notifications"
+        app:actionLayout="@layout/menu_notification_badge"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_messages"
+        android:title="Messages"
+        android:icon="@drawable/ic_messages"
+        app:actionLayout="@layout/menu_message_badge"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_friends"
+        android:title="Amis"
+        android:visible="false"
+        android:icon="@drawable/ic_nav_friends"
+        app:showAsAction="always" />
+
+</menu>

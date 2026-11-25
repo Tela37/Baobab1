@@ -5,6 +5,13 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorSecondary">@color/secondaryColor</item>
+        <item name="android:textColorHint">@color/text_hint_color</item>
+        <item name="toolbarStyle">@style/Widget.BaobabTD.Toolbar</item>
+    </style>
+
+    <style name="Widget.BaobabTD.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="navigationIconTint">@android:color/white</item>
+        <item name="titleTextColor">@android:color/white</item>
     </style>
 
     <style name="Theme.BaobabTD" parent="Base.Theme.BaobabTD" />

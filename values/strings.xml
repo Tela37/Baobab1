@@ -25,7 +25,7 @@
     <!-- ============================================================ -->
     <!-- Class LoginActivity & layout activity_login.xml -->
     <!-- ============================================================ -->
-    <string name="hint_email">Email</string>
+    <string name="hint_email_telephone">Email ou téléphone</string>
     <string name="hint_email_or_phone">Email ou Téléphone</string>
     <string name="toast_phone_verification_required">Vérification du numéro de téléphone requise</string>
     <string name="hint_password">Mot de passe</string>
@@ -45,10 +45,10 @@
     <string name="toast_google_cancel">Connexion Google annulée ou indisponible (%d)</string>
     <string name="toast_social_login_error">Erreur lors de la connexion sociale</string>
 
-    <!-- Facebook Config Placeholders -->
-    <string name="facebook_app_id">2312188776302997</string>
-    <string name="facebook_client_token">38d731bf0e763f7ff0223a8fa8c0282e</string>
-    <string name="fb_login_protocol_scheme">fb2312188776302997</string>
+    <!-- Facebook Config -->
+    <string name="facebook_app_id">1364686782246432</string>
+    <string name="facebook_client_token">bc837029b2fd4239726d2dbac6348216</string>
+    <string name="fb_login_protocol_scheme">fb1364686782246432</string>
 
     <!-- ============================================================ -->
     <!-- Class RegisterActivity & layout activity_register.xml -->
@@ -162,7 +162,7 @@
     <string name="title_settings">Paramètres</string>
     <string name="general_preferences">Préférences générales</string>
     <string name="language_setting_title">Langue d\'affichage 🌐</string>
-    <string name="language_setting_desc">Sélectionnez la langue de l\'application (Français, English, العربية)</string>
+    <string name="language_setting_desc">Sélectionnez la langue de l\'application</string>
     <string name="online_presence">Présence en ligne 🟢</string>
     <string name="online_presence_desc">Afficher l\'icône verte lorsque vous êtes actif</string>
     <string name="notifications_title">Notifications 🔔</string>
@@ -359,6 +359,7 @@
     <string name="dialog_msg_delete_conversation">Voulez-vous vraiment supprimer cette conversation ? Tous les messages seront effacés.</string>
     <string name="dialog_msg_clear_group_history">Voulez-vous vraiment effacer tous les messages de ce groupe ?</string>
     <string name="dialog_msg_delete_announcement">Voulez-vous vraiment effacer et supprimer l\'annonce actuellement en ligne ?</string>
+    <string name="_0_r_ponses_d_aide">💬 0 réponses d\'aide</string>
 
     <string-array name="gender_array">
         <item>Masculin</item>

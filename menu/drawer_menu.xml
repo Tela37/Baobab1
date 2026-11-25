@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/ville"
+            android:title="Accueil" />
+
+        <item
+            android:id="@+id/nav_messages"
+            android:icon="@drawable/ic_messages"
+            android:title="Messages" />
+
+        <item
+            android:id="@+id/nav_friends"
+            android:icon="@drawable/ic_nav_friends"
+            android:title="Mes Amis" />
+
+        <item
+            android:id="@+id/nav_friend_requests"
+            android:icon="@drawable/ic_friend_request"
+            android:title="Demandes d'ami" />
+
+        <item
+            android:id="@+id/nav_notifications"
+            android:icon="@drawable/ic_notifications"
+            android:title="Notifications" />
+
+        <item
+            android:id="@+id/nav_groups"
+            android:icon="@drawable/ic_groups"
+            android:title="Mes Groupes" />
+
+        <item
+            android:id="@+id/nav_personal_page"
+            android:icon="@android:drawable/ic_menu_slideshow"
+            android:title="Ma Page" />
+
+        <item
+            android:id="@+id/nav_marketplace"
+            android:icon="@drawable/ic_nav_marketplace"
+            android:title="Marketplace 🛒" />
+
+        <item
+            android:id="@+id/nav_library"
+            android:icon="@drawable/ic_nav_library"
+            android:title="Bibliothèque Numérique 📖" />
+
+        <item
+            android:id="@+id/nav_gemini_assistant"
+            android:icon="@drawable/ic_ai_robot"
+            android:title="Assistant IA ✨" />
+
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/ic_settings"
+            android:title="Paramètres" />
+
+        <item
+            android:id="@+id/nav_ads"
+            android:icon="@drawable/ic_ads"
+            android:title="Publicités" />
+    </group>
+
+    <item android:title="Compte">
+        <menu>
+            <item
+                android:id="@+id/nav_logout"
+                android:icon="@android:drawable/ic_menu_close_clear_cancel"
+                android:title="Déconnexion" />
+        </menu>
+    </item>
+
+</menu>

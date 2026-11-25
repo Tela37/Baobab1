@@ -17,4 +17,21 @@
     <color name="nav_icon_selected">#2E7D32</color>
     <color name="badge_red">#E53935</color>
     <color name="colorProfile">#2E7D32</color>
+    <color name="text_hint_color">#757575</color>
+    <color name="color_blue_action">#2196F3</color>
+    <color name="color_like_red">#FF3B30</color>
+    <color name="color_orange_reaction">#FF9800</color>
+    <color name="color_purple_reaction">#9C27B0</color>
+    <color name="color_dark_red">#B71C1C</color>
+    <color name="color_light_grey">#E0E0E0</color>
+    <color name="color_dark_grey">#424242</color>
+    <color name="color_status_yellow_bg">#FFF8E1</color>
+    <color name="color_status_yellow_text">#F57F17</color>
+    <color name="color_status_blue_bg">#E3F2FD</color>
+    <color name="color_status_blue_text">#1565C0</color>
+    <color name="color_status_red_bg">#FFCDD2</color>
+    <color name="color_status_green_bg">#C8E6C9</color>
+    <color name="color_green_action">#43A047</color>
+    <color name="color_green_block">#388E3C</color>
+    <color name="color_video_bg">#333333</color>
 </resources>

@@ -25,7 +25,7 @@
     <!-- ============================================================ -->
     <!-- Class LoginActivity & layout activity_login.xml -->
     <!-- ============================================================ -->
-    <string name="hint_email">البريد الإلكتروني</string>
+    <string name="hint_email_telephone">البريد الإلكتروني</string>
     <string name="hint_email_or_phone">البريد الإلكتروني أو الهاتف</string>
     <string name="toast_phone_verification_required">التحقق من رقم الهاتف مطلوب</string>
     <string name="hint_password">كلمة المرور</string>
@@ -45,10 +45,10 @@
     <string name="toast_google_cancel">تم إلغاء تسجيل الدخول بـ Google (%d)</string>
     <string name="toast_social_login_error">خطأ في تسجيل الدخول الاجتماعي</string>
 
-    <!-- Facebook Config Placeholders -->
-    <string name="facebook_app_id">2312188776302997</string>
-    <string name="facebook_client_token">38d731bf0e763f7ff0223a8fa8c0282e</string>
-    <string name="fb_login_protocol_scheme">fb2312188776302997</string>
+    <!-- Facebook Config -->
+    <string name="facebook_app_id">1364686782246432</string>
+    <string name="facebook_client_token">bc837029b2fd4239726d2dbac6348216</string>
+    <string name="fb_login_protocol_scheme">fb1364686782246432</string>
 
     <!-- ============================================================ -->
     <!-- Class RegisterActivity & layout activity_register.xml -->
@@ -359,6 +359,7 @@
     <string name="dialog_msg_delete_conversation">هل أنت تأكد من إرادتك لحذف هذه المحادثة؟ سيتم إزالة جميع الرسائل.</string>
     <string name="dialog_msg_clear_group_history">هل أنت تأكد من مسح جميع رسائل هذه المجموعة؟</string>
     <string name="dialog_msg_delete_announcement">هل أنت تأكد من مسح وحذف الإعلان المنشور حالياً؟</string>
+    <string name="_0_r_ponses_d_aide">💬 0 réponses d\'aide</string>
 
     <string-array name="gender_array">
         <item>ذكر</item>

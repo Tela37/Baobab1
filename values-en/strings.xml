@@ -25,7 +25,7 @@
     <!-- ============================================================ -->
     <!-- Class LoginActivity & layout activity_login.xml -->
     <!-- ============================================================ -->
-    <string name="hint_email">Email</string>
+    <string name="hint_email_telephone">Email</string>
     <string name="hint_email_or_phone">Email or Phone</string>
     <string name="toast_phone_verification_required">Phone verification required</string>
     <string name="hint_password">Password</string>
@@ -45,10 +45,10 @@
     <string name="toast_google_cancel">Google sign-in canceled or unavailable (%d)</string>
     <string name="toast_social_login_error">Social sign-in error</string>
 
-    <!-- Facebook Config Placeholders -->
-    <string name="facebook_app_id">2312188776302997</string>
-    <string name="facebook_client_token">38d731bf0e763f7ff0223a8fa8c0282e</string>
-    <string name="fb_login_protocol_scheme">fb2312188776302997</string>
+    <!-- Facebook Config -->
+    <string name="facebook_app_id">1364686782246432</string>
+    <string name="facebook_client_token">bc837029b2fd4239726d2dbac6348216</string>
+    <string name="fb_login_protocol_scheme">fb1364686782246432</string>
 
     <!-- ============================================================ -->
     <!-- Class RegisterActivity & layout activity_register.xml -->
@@ -359,6 +359,7 @@
     <string name="dialog_msg_delete_conversation">Are you sure you want to delete this conversation? All messages will be erased.</string>
     <string name="dialog_msg_clear_group_history">Are you sure you want to clear all messages from this group?</string>
     <string name="dialog_msg_delete_announcement">Are you sure you want to delete the currently active announcement?</string>
+    <string name="_0_r_ponses_d_aide">💬 0 réponses d\'aide</string>
 
     <string-array name="gender_array">
         <item>Male</item>
