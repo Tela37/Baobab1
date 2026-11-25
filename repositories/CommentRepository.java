@@ -196,6 +196,7 @@ public class CommentRepository {
             obj.put("authorName", c.getAuthorName());
             obj.put("authorProfileImage", c.getAuthorProfileImage());
             obj.put("content", c.getContent());
+            obj.put("imagePath", c.getImagePath());
             obj.put("likesCount", c.getLikesCount());
             obj.put("likedByCurrentUser", c.isLikedByCurrentUser());
             obj.put("userReactionType", c.getUserReactionType());
@@ -221,6 +222,7 @@ public class CommentRepository {
                     obj.optBoolean("likedByCurrentUser", false),
                     obj.optString("createdAt", null)
             );
+            c.setImagePath(obj.optString("imagePath", null));
             c.setUserReactionType(obj.optString("userReactionType", null));
             return c;
         } catch (Exception e) {
@@ -244,7 +246,11 @@ public class CommentRepository {
     }
 
     public boolean addComment(int postId, Integer parentId, int currentUserId, String content) {
-        if (content == null || content.trim().isEmpty()) return false;
+        return addComment(postId, parentId, currentUserId, content, null);
+    }
+
+    public boolean addComment(int postId, Integer parentId, int currentUserId, String content, String imagePath) {
+        if ((content == null || content.trim().isEmpty()) && (imagePath == null || imagePath.trim().isEmpty())) return false;
 
         int commentId = Math.abs((postId + "_" + currentUserId + "_" + System.currentTimeMillis()).hashCode());
         String createdAt = TimeUtils.getCurrentLocalDateTime();
@@ -260,7 +266,8 @@ public class CommentRepository {
         commentObj.setUserId(currentUserId);
         commentObj.setAuthorName(authorName);
         commentObj.setAuthorProfileImage(authorProfileImage);
-        commentObj.setContent(content);
+        commentObj.setContent(content != null ? content : "");
+        commentObj.setImagePath(imagePath);
         commentObj.setCreatedAt(createdAt);
 
         List<Comment> list = commentsCache.computeIfAbsent(postId, k -> Collections.synchronizedList(new ArrayList<>()));
@@ -275,7 +282,7 @@ public class CommentRepository {
 
         FirebaseHelper.getInstance().syncCommentToRealtimeDb(postId, commentObj);
 
-        String snippet = content.length() > 35 ? content.substring(0, 35) + "..." : content;
+        String snippet = (content != null && !content.trim().isEmpty()) ? (content.length() > 35 ? content.substring(0, 35) + "..." : content) : "Image partagée";
         notificationRepository.addNotification(currentUserId, currentUserId, "POST_COMMENT", "POST", postId, "Un commentaire a été ajouté : \"" + snippet + "\"");
 
         return true;
@@ -348,5 +355,17 @@ public class CommentRepository {
 
     public boolean reportPost(int postId, int currentUserId, String reason) {
         return true;
+    }
+
+    public boolean reportComment(int commentId, int currentUserId) {
+        try {
+            FirebaseHelper.getInstance().getRealtimeDb().getReference("comment_reports")
+                    .child(String.valueOf(commentId))
+                    .child(String.valueOf(currentUserId))
+                    .setValue(true);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

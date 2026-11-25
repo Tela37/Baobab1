@@ -50,9 +50,24 @@ public class UserStoryGroup {
      */
     public String getCoverImage() {
         if (stories != null && !stories.isEmpty()) {
-            return stories.get(0).getImagePath();
+            for (Story s : stories) {
+                if (s != null && s.getImagePath() != null && !s.getImagePath().trim().isEmpty()) {
+                    return s.getImagePath();
+                }
+            }
         }
         return userAvatar;
+    }
+
+    /**
+     * Retourne la date de création de la story la plus récente du groupe.
+     */
+    public String getLatestCreatedAt() {
+        if (stories != null && !stories.isEmpty()) {
+            Story latest = stories.get(0);
+            return latest != null ? latest.getCreatedAt() : null;
+        }
+        return null;
     }
 
     public void setUserId(int userId) {

@@ -69,7 +69,7 @@ public class NotificationHelper {
         );
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.chaticon)
+                .setSmallIcon(R.drawable.baoba1)
                 .setContentTitle("Baobab TD")
                 .setContentText(totalUnreadCount + " élément(s) non lu(s)")
                 .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -112,7 +112,7 @@ public class NotificationHelper {
         );
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.chaticon)
+                .setSmallIcon(R.drawable.baoba1)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)

@@ -10,6 +10,8 @@ import android.widget.ImageView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -52,10 +54,11 @@ public class ImageUtils {
             String filename = "img_" + System.currentTimeMillis() + "_" + System.nanoTime() + ".jpg";
             File destinationFile = new File(dir, filename);
 
-            InputStream inputStream = context.getContentResolver().openInputStream(imageUri);
-            if (inputStream == null) {
+            InputStream rawInputStream = context.getContentResolver().openInputStream(imageUri);
+            if (rawInputStream == null) {
                 return null;
             }
+            InputStream inputStream = new BufferedInputStream(rawInputStream);
 
             Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
             inputStream.close();
@@ -64,10 +67,10 @@ public class ImageUtils {
                 return null;
             }
 
-            FileOutputStream outputStream = new FileOutputStream(destinationFile);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream);
-            outputStream.flush();
-            outputStream.close();
+            try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(destinationFile))) {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream);
+                outputStream.flush();
+            }
 
             return destinationFile.getAbsolutePath();
 
@@ -91,21 +94,19 @@ public class ImageUtils {
             String filename = "video_" + System.currentTimeMillis() + "_" + System.nanoTime() + ".mp4";
             File destinationFile = new File(dir, filename);
 
-            InputStream inputStream = context.getContentResolver().openInputStream(videoUri);
-            if (inputStream == null) {
+            InputStream rawInputStream = context.getContentResolver().openInputStream(videoUri);
+            if (rawInputStream == null) {
                 return null;
             }
-
-            FileOutputStream outputStream = new FileOutputStream(destinationFile);
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
+            try (InputStream inputStream = new BufferedInputStream(rawInputStream);
+                 BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(destinationFile))) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+                outputStream.flush();
             }
-
-            inputStream.close();
-            outputStream.flush();
-            outputStream.close();
 
             return destinationFile.getAbsolutePath();
 
@@ -129,21 +130,19 @@ public class ImageUtils {
             String filename = (prefix != null ? prefix : "file") + "_" + System.currentTimeMillis() + "_" + System.nanoTime() + ".pdf";
             File destinationFile = new File(dir, filename);
 
-            InputStream inputStream = context.getContentResolver().openInputStream(fileUri);
-            if (inputStream == null) {
+            InputStream rawInputStream = context.getContentResolver().openInputStream(fileUri);
+            if (rawInputStream == null) {
                 return null;
             }
-
-            FileOutputStream outputStream = new FileOutputStream(destinationFile);
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
+            try (InputStream inputStream = new BufferedInputStream(rawInputStream);
+                 BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(destinationFile))) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+                outputStream.flush();
             }
-
-            inputStream.close();
-            outputStream.flush();
-            outputStream.close();
 
             return destinationFile.getAbsolutePath();
 
@@ -200,10 +199,34 @@ public class ImageUtils {
     public static String uriToBase64(Context context, Uri uri) {
         if (context == null || uri == null) return null;
         try {
-            InputStream inputStream = context.getContentResolver().openInputStream(uri);
-            if (inputStream == null) return null;
-            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-            inputStream.close();
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            InputStream stream1 = context.getContentResolver().openInputStream(uri);
+            if (stream1 != null) {
+                BitmapFactory.decodeStream(stream1, null, options);
+                stream1.close();
+            }
+
+            int width = options.outWidth;
+            int height = options.outHeight;
+            int inSampleSize = 1;
+            int maxDim = 800;
+
+            if (width > maxDim || height > maxDim) {
+                final int halfHeight = height / 2;
+                final int halfWidth = width / 2;
+                while ((halfHeight / inSampleSize) >= maxDim && (halfWidth / inSampleSize) >= maxDim) {
+                    inSampleSize *= 2;
+                }
+            }
+
+            options.inJustDecodeBounds = false;
+            options.inSampleSize = inSampleSize;
+            InputStream stream2 = context.getContentResolver().openInputStream(uri);
+            if (stream2 == null) return null;
+            Bitmap bitmap = BitmapFactory.decodeStream(stream2, null, options);
+            stream2.close();
+
             return bitmapToBase64(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
@@ -211,7 +234,22 @@ public class ImageUtils {
         }
     }
 
+    public static String extractFirstImage(String imagePath) {
+        if (imagePath == null || imagePath.trim().isEmpty()) return null;
+        String trimmed = imagePath.trim();
+        if (trimmed.contains("||")) {
+            String[] parts = trimmed.split("\\|\\|");
+            for (String p : parts) {
+                if (p != null && !p.trim().isEmpty()) {
+                    return p.trim();
+                }
+            }
+        }
+        return trimmed;
+    }
+
     public static boolean isImagePathValid(Context context, String imagePath) {
+        imagePath = extractFirstImage(imagePath);
         if (imagePath == null || imagePath.trim().isEmpty()) {
             return false;
         }
@@ -230,12 +268,22 @@ public class ImageUtils {
             if (context == null) return true;
             try {
                 Uri uri = Uri.parse(trimmed);
-                try (android.content.res.AssetFileDescriptor afd = context.getContentResolver().openAssetFileDescriptor(uri, "r")) {
-                    return afd != null;
+                try (InputStream inputStream = context.getContentResolver().openInputStream(uri)) {
+                    if (inputStream != null) {
+                        return true;
+                    }
                 }
-            } catch (Exception e) {
-                return false;
+            } catch (Exception e1) {
+                try {
+                    Uri uri = Uri.parse(trimmed);
+                    try (android.content.res.AssetFileDescriptor afd = context.getContentResolver().openAssetFileDescriptor(uri, "r")) {
+                        return afd != null;
+                    }
+                } catch (Exception e2) {
+                    return false;
+                }
             }
+            return false;
         }
 
         String filePath = trimmed;
@@ -270,12 +318,22 @@ public class ImageUtils {
             if (context == null) return true;
             try {
                 Uri uri = Uri.parse(trimmed);
-                try (android.content.res.AssetFileDescriptor afd = context.getContentResolver().openAssetFileDescriptor(uri, "r")) {
-                    return afd != null;
+                try (InputStream inputStream = context.getContentResolver().openInputStream(uri)) {
+                    if (inputStream != null) {
+                        return true;
+                    }
                 }
-            } catch (Exception e) {
-                return false;
+            } catch (Exception e1) {
+                try {
+                    Uri uri = Uri.parse(trimmed);
+                    try (android.content.res.AssetFileDescriptor afd = context.getContentResolver().openAssetFileDescriptor(uri, "r")) {
+                        return afd != null;
+                    }
+                } catch (Exception e2) {
+                    return false;
+                }
             }
+            return false;
         }
 
         String filePath = trimmed;
@@ -291,23 +349,29 @@ public class ImageUtils {
         return false;
     }
 
+    private static Object getGlideModel(String imagePath) {
+        if (isBase64Image(imagePath)) {
+            try {
+                String cleanBase64 = imagePath.trim();
+                if (cleanBase64.contains(",")) {
+                    cleanBase64 = cleanBase64.substring(cleanBase64.indexOf(",") + 1);
+                }
+                return android.util.Base64.decode(cleanBase64, android.util.Base64.DEFAULT);
+            } catch (Exception e) {
+                return imagePath;
+            }
+        }
+        return imagePath;
+    }
+
     public static void loadProfileImage(Context context, String imagePath, ImageView imageView) {
         if (imageView == null) return;
 
+        imagePath = extractFirstImage(imagePath);
         Context targetContext = context != null ? context : imageView.getContext();
 
         if (!isImagePathValid(targetContext, imagePath)) {
             imageView.setImageResource(R.drawable.ic_profile);
-            return;
-        }
-
-        if (isBase64Image(imagePath)) {
-            Bitmap b = decodeBase64ToBitmap(imagePath);
-            if (b != null) {
-                imageView.setImageBitmap(b);
-            } else {
-                imageView.setImageResource(R.drawable.ic_profile);
-            }
             return;
         }
 
@@ -318,7 +382,7 @@ public class ImageUtils {
 
         try {
             Glide.with(targetContext)
-                    .load(imagePath)
+                    .load(getGlideModel(imagePath))
                     .placeholder(R.drawable.ic_profile)
                     .error(R.drawable.ic_profile)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
@@ -331,20 +395,11 @@ public class ImageUtils {
     public static void loadFullImage(Context context, String imagePath, ImageView imageView) {
         if (imageView == null) return;
 
+        imagePath = extractFirstImage(imagePath);
         Context targetContext = context != null ? context : imageView.getContext();
 
         if (!isImagePathValid(targetContext, imagePath)) {
             imageView.setImageDrawable(null);
-            return;
-        }
-
-        if (isBase64Image(imagePath)) {
-            Bitmap b = decodeBase64ToBitmap(imagePath);
-            if (b != null) {
-                imageView.setImageBitmap(b);
-            } else {
-                imageView.setImageDrawable(null);
-            }
             return;
         }
 
@@ -355,7 +410,7 @@ public class ImageUtils {
 
         try {
             Glide.with(targetContext)
-                    .load(imagePath)
+                    .load(getGlideModel(imagePath))
                     .placeholder(android.R.color.transparent)
                     .error(android.R.color.transparent)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
@@ -368,20 +423,11 @@ public class ImageUtils {
     public static void loadPostImage(Context context, String imagePath, ImageView imageView) {
         if (imageView == null) return;
 
+        imagePath = extractFirstImage(imagePath);
         Context targetContext = context != null ? context : imageView.getContext();
 
         if (!isImagePathValid(targetContext, imagePath)) {
             imageView.setImageDrawable(null);
-            return;
-        }
-
-        if (isBase64Image(imagePath)) {
-            Bitmap b = decodeBase64ToBitmap(imagePath);
-            if (b != null) {
-                imageView.setImageBitmap(b);
-            } else {
-                imageView.setImageDrawable(null);
-            }
             return;
         }
 
@@ -392,7 +438,7 @@ public class ImageUtils {
 
         try {
             Glide.with(targetContext)
-                    .load(imagePath)
+                    .load(getGlideModel(imagePath))
                     .centerCrop()
                     .placeholder(R.drawable.ic_baobab_logo)
                     .error(R.drawable.ic_baobab_logo)
@@ -406,65 +452,67 @@ public class ImageUtils {
     public static void loadStoryImage(Context context, String imagePath, ImageView imageView) {
         if (imageView == null) return;
 
+        imagePath = extractFirstImage(imagePath);
         Context targetContext = context != null ? context : imageView.getContext();
 
         if (!isImagePathValid(targetContext, imagePath)) {
-            imageView.setImageDrawable(null);
-            return;
-        }
-
-        if (isBase64Image(imagePath)) {
-            Bitmap b = decodeBase64ToBitmap(imagePath);
-            if (b != null) {
-                imageView.setImageBitmap(b);
-            } else {
-                imageView.setImageDrawable(null);
-            }
+            imageView.setImageResource(R.drawable.ic_profile);
             return;
         }
 
         if (targetContext == null) {
-            imageView.setImageDrawable(null);
+            imageView.setImageResource(R.drawable.ic_profile);
             return;
         }
 
         try {
             Glide.with(targetContext)
-                    .load(imagePath)
+                    .load(getGlideModel(imagePath))
                     .centerCrop()
-                    .placeholder(R.drawable.badge_background)
-                    .error(R.drawable.badge_background)
+                    .placeholder(R.drawable.ic_profile)
+                    .error(R.drawable.ic_profile)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
                     .into(imageView);
         } catch (Exception e) {
-            imageView.setImageDrawable(null);
+            imageView.setImageResource(R.drawable.ic_profile);
         }
     }
 
     public static void loadVideoThumbnail(Context context, String videoPath, ImageView imageView) {
-        if (imageView == null) return;
+        if (imageView == null || videoPath == null || videoPath.trim().isEmpty()) return;
 
         Context targetContext = context != null ? context : imageView.getContext();
-
-        if (!isVideoPathValid(targetContext, videoPath)) {
-            imageView.setBackgroundColor(android.graphics.Color.parseColor("#333333"));
-            imageView.setImageBitmap(null);
-            return;
-        }
-
-        if (targetContext == null) {
-            imageView.setBackgroundColor(android.graphics.Color.parseColor("#333333"));
-            imageView.setImageBitmap(null);
-            return;
-        }
+        if (targetContext == null) return;
 
         try {
-            Glide.with(targetContext)
-                    .load(videoPath)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .into(imageView);
+            String lower = videoPath.toLowerCase();
+            if (lower.contains("youtube.com") || lower.contains("youtu.be")) {
+                String videoId = "";
+                if (lower.contains("youtu.be/")) {
+                    videoId = videoPath.substring(videoPath.lastIndexOf("/") + 1);
+                } else if (lower.contains("watch?v=")) {
+                    int idx = videoPath.indexOf("watch?v=");
+                    videoId = videoPath.substring(idx + 8);
+                    int amp = videoId.indexOf("&");
+                    if (amp != -1) videoId = videoId.substring(0, amp);
+                }
+                String thumbUrl = "https://img.youtube.com/vi/" + videoId + "/hqdefault.jpg";
+                Glide.with(targetContext)
+                        .load(thumbUrl)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .centerCrop()
+                        .into(imageView);
+            } else {
+                Glide.with(targetContext)
+                        .asBitmap()
+                        .load(videoPath)
+                        .frame(1000000)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .centerCrop()
+                        .into(imageView);
+            }
         } catch (Exception e) {
-            imageView.setBackgroundColor(android.graphics.Color.parseColor("#333333"));
+            imageView.setBackgroundColor(androidx.core.content.ContextCompat.getColor(targetContext, R.color.color_video_bg));
             imageView.setImageBitmap(null);
         }
     }

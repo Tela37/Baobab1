@@ -134,6 +134,10 @@ public class NotificationRepository {
     }
 
     public int getUnreadNotificationCount(int recipientId) {
+        return getUnreadCount(recipientId);
+    }
+
+    public int getUnreadCount(int recipientId) {
         List<AppNotification> list = notificationsCache.get(recipientId);
         if (list == null) return 0;
         int count = 0;

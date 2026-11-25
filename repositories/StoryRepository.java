@@ -2,9 +2,13 @@ package td.teladoum.baobab.repositories;
 
 import android.content.Context;
 
+import com.google.firebase.database.DatabaseReference;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import td.teladoum.baobab.firebase.FirebaseHelper;
@@ -20,14 +24,25 @@ import td.teladoum.baobab.utils.TimeUtils;
 public class StoryRepository {
 
     private static final Map<Integer, Story> storiesCache = new ConcurrentHashMap<>();
-    private static final Map<Integer, Integer> storyViewsCount = new ConcurrentHashMap<>();
-    private static com.google.firebase.database.ValueEventListener liveStoriesListener;
-    private final NotificationRepository notificationRepository;
+    private static final Map<Integer, Set<Integer>> storyViewsMap = new ConcurrentHashMap<>();
     private final UserRepository userRepository;
 
     public StoryRepository(Context context) {
-        this.notificationRepository = new NotificationRepository(context);
-        this.userRepository = new UserRepository(context);
+        this.userRepository = new UserRepository(context != null ? context.getApplicationContext() : null);
+        preloadSampleStories();
+    }
+
+    private void preloadSampleStories() {
+        String now = TimeUtils.getCurrentLocalDateTime();
+        if (storiesCache.isEmpty()) {
+            storiesCache.put(901, new Story(901, 101, "Rinaldi Rema", "https://images.unsplash.com/photo-1534528741775-53994a69daeb", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3", "Bienvenue sur BaobabTD ! 🌟", now));
+            storiesCache.put(902, new Story(902, 102, "Tel-Adoum Maïbé", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e", "Journée ensoleillée à N'Djamena 🇹🇩", now));
+        } else {
+            Story s1 = storiesCache.get(901);
+            if (s1 != null) s1.setCreatedAt(now);
+            Story s2 = storiesCache.get(902);
+            if (s2 != null) s2.setCreatedAt(now);
+        }
     }
 
     public boolean createStory(int userId, String imagePath, String caption) {
@@ -46,37 +61,92 @@ public class StoryRepository {
         return true;
     }
 
+    private static com.google.firebase.database.ValueEventListener liveStoriesListener = null;
+
+    public static com.google.firebase.database.ValueEventListener listenToRealtimeStories(Runnable onStoriesUpdated) {
+        DatabaseReference ref = FirebaseHelper.getInstance().getRealtimeDb().getReference("stories");
+        if (liveStoriesListener != null) {
+            ref.removeEventListener(liveStoriesListener);
+        }
+
+        liveStoriesListener = new com.google.firebase.database.ValueEventListener() {
+            @Override
+            public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot snapshot) {
+                for (com.google.firebase.database.DataSnapshot snap : snapshot.getChildren()) {
+                    Story story = snap.getValue(Story.class);
+                    if (story != null) {
+                        storiesCache.put(story.getId(), story);
+                    }
+                }
+                if (onStoriesUpdated != null) {
+                    onStoriesUpdated.run();
+                }
+            }
+
+            @Override
+            public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
+                if (onStoriesUpdated != null) {
+                    onStoriesUpdated.run();
+                }
+            }
+        };
+        ref.addValueEventListener(liveStoriesListener);
+        return liveStoriesListener;
+    }
+
     public void loadStoriesFromCloud(Runnable onComplete) {
-        if (liveStoriesListener == null) {
-            liveStoriesListener = new com.google.firebase.database.ValueEventListener() {
-                @Override
-                public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot snapshot) {
-                    storiesCache.clear();
-                    for (com.google.firebase.database.DataSnapshot snap : snapshot.getChildren()) {
-                        Story story = snap.getValue(Story.class);
-                        if (story != null) {
-                            storiesCache.put(story.getId(), story);
+        preloadSampleStories();
+        FirebaseHelper.getInstance().getRealtimeDb().getReference("stories")
+                .addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+                    @Override
+                    public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot snapshot) {
+                        for (com.google.firebase.database.DataSnapshot snap : snapshot.getChildren()) {
+                            Story story = snap.getValue(Story.class);
+                            if (story != null) {
+                                storiesCache.put(story.getId(), story);
+                                syncStoryViewsFromCloud(story.getId());
+                            }
+                        }
+                        listenToRealtimeStories(onComplete);
+                        if (onComplete != null) {
+                            onComplete.run();
                         }
                     }
-                    if (onComplete != null) {
-                        onComplete.run();
-                    }
-                }
 
-                @Override
-                public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
-                    if (onComplete != null) {
-                        onComplete.run();
+                    @Override
+                    public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
+                        listenToRealtimeStories(onComplete);
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
                     }
-                }
-            };
-            FirebaseHelper.getInstance().getRealtimeDb().getReference("stories")
-                    .addValueEventListener(liveStoriesListener);
-        } else {
-            if (onComplete != null) {
-                onComplete.run();
-            }
-        }
+                });
+    }
+
+    private void syncStoryViewsFromCloud(int storyId) {
+        try {
+            FirebaseHelper.getInstance().getRealtimeDb()
+                    .getReference("story_views")
+                    .child(String.valueOf(storyId))
+                    .addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+                        @Override
+                        public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot snapshot) {
+                            Set<Integer> viewers = storyViewsMap.computeIfAbsent(storyId, k -> java.util.Collections.synchronizedSet(new HashSet<>()));
+                            for (com.google.firebase.database.DataSnapshot snap : snapshot.getChildren()) {
+                                try {
+                                    String key = snap.getKey();
+                                    if (key != null) {
+                                        int viewerId = Integer.parseInt(key);
+                                        viewers.add(viewerId);
+                                    }
+                                } catch (Exception ignored) {}
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {}
+                    });
+        } catch (Exception ignored) {}
     }
 
     public void loadStoriesPage(int limit, Runnable onComplete) {
@@ -109,7 +179,15 @@ public class StoryRepository {
     }
 
     public List<Story> getRecentStories() {
-        return new ArrayList<>(storiesCache.values());
+        List<Story> recent = new ArrayList<>();
+        for (Story story : storiesCache.values()) {
+            if (story != null) {
+                if (TimeUtils.isWithinHours(story.getCreatedAt(), 24)) {
+                    recent.add(story);
+                }
+            }
+        }
+        return recent;
     }
 
     public List<UserStoryGroup> getGroupedRecentStories() {
@@ -163,11 +241,27 @@ public class StoryRepository {
     }
 
     public void recordStoryView(int storyId, int userId) {
-        storyViewsCount.put(storyId, storyViewsCount.getOrDefault(storyId, 0) + 1);
+        Story story = storiesCache.get(storyId);
+        if (story != null && story.getUserId() == userId) {
+            // Author viewing their own story -> do not count!
+            return;
+        }
+
+        Set<Integer> viewers = storyViewsMap.computeIfAbsent(storyId, k -> java.util.Collections.synchronizedSet(new HashSet<>()));
+        viewers.add(userId);
+
+        try {
+            FirebaseHelper.getInstance().getRealtimeDb()
+                    .getReference("story_views")
+                    .child(String.valueOf(storyId))
+                    .child(String.valueOf(userId))
+                    .setValue(true);
+        } catch (Exception ignored) {}
     }
 
     public int getStoryViewsCount(int storyId) {
-        return storyViewsCount.getOrDefault(storyId, 0);
+        Set<Integer> viewers = storyViewsMap.get(storyId);
+        return viewers != null ? viewers.size() : 0;
     }
 
     public boolean addStoryComment(int storyId, int userId, String comment) {

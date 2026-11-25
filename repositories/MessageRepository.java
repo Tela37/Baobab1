@@ -97,6 +97,7 @@ public class MessageRepository {
 
         List<Message> list = messageCache.computeIfAbsent(conversationId, k -> Collections.synchronizedList(new ArrayList<>()));
         list.add(msg);
+        saveMessagesToRoom(context, list);
 
         if (isNetworkAvailable(context)) {
             try {
@@ -112,15 +113,22 @@ public class MessageRepository {
     }
 
     public boolean sendVideoMessage(int conversationId, int senderId, String videoPath) {
+        return sendVideoMessage(conversationId, senderId, videoPath, null, null);
+    }
+
+    public boolean sendVideoMessage(int conversationId, int senderId, String videoPath, Integer replyToMessageId, String replyToText) {
         if (videoPath == null || videoPath.trim().isEmpty()) return false;
         int msgId = Math.abs((conversationId + "_" + senderId + "_" + System.currentTimeMillis() + "_" + System.nanoTime()).hashCode());
         String createdAt = TimeUtils.getCurrentLocalDateTime();
 
         Message msg = new Message(msgId, conversationId, senderId, "", createdAt);
         msg.setVideoPath(videoPath);
+        msg.setReplyToMessageId(replyToMessageId);
+        msg.setReplyToText(replyToText);
 
         List<Message> list = messageCache.computeIfAbsent(conversationId, k -> Collections.synchronizedList(new ArrayList<>()));
         list.add(msg);
+        saveMessagesToRoom(context, list);
 
         if (isNetworkAvailable(context)) {
             try {
@@ -136,15 +144,22 @@ public class MessageRepository {
     }
 
     public boolean sendAudioMessage(int conversationId, int senderId, String audioPath) {
+        return sendAudioMessage(conversationId, senderId, audioPath, null, null);
+    }
+
+    public boolean sendAudioMessage(int conversationId, int senderId, String audioPath, Integer replyToMessageId, String replyToText) {
         if (audioPath == null || audioPath.trim().isEmpty()) return false;
         int msgId = Math.abs((conversationId + "_" + senderId + "_" + System.currentTimeMillis() + "_" + System.nanoTime()).hashCode());
         String createdAt = TimeUtils.getCurrentLocalDateTime();
 
         Message msg = new Message(msgId, conversationId, senderId, "", createdAt);
         msg.setAudioPath(audioPath);
+        msg.setReplyToMessageId(replyToMessageId);
+        msg.setReplyToText(replyToText);
 
         List<Message> list = messageCache.computeIfAbsent(conversationId, k -> Collections.synchronizedList(new ArrayList<>()));
         list.add(msg);
+        saveMessagesToRoom(context, list);
 
         if (isNetworkAvailable(context)) {
             try {
@@ -350,6 +365,7 @@ public class MessageRepository {
                     }
                     sortMessagesChronologically(existing);
                 }
+                saveMessagesToRoom(context, existing);
 
                 if (onComplete != null) {
                     onComplete.run();
@@ -388,6 +404,7 @@ public class MessageRepository {
                     }
                     sortMessagesChronologically(fetched);
                     messageCache.put(conversationId, fetched);
+                    saveMessagesToRoom(context, fetched);
                     if (onComplete != null) {
                         onComplete.run();
                     }
@@ -462,6 +479,7 @@ public class MessageRepository {
                 for (Message msg : list) {
                     if (msg.getId() == messageId) {
                         msg.setReaction(reaction);
+                        saveMessagesToRoom(context, list);
                         if (isNetworkAvailable(context)) {
                             FirebaseHelper.getInstance().syncMessageReactionToRealtimeDb(messageId, userId, reaction);
                         }
@@ -516,12 +534,27 @@ public class MessageRepository {
 
     public String getLastMessage(int conversationId) {
         List<Message> list = messageCache.get(conversationId);
+        if (list == null || list.isEmpty()) {
+            list = getMessages(conversationId);
+        }
         if (list == null || list.isEmpty()) return "Aucun message";
         synchronized (list) {
             Message last = list.get(list.size() - 1);
             if (last.isDeleted()) return "Ce message a été supprimé 🚫";
-            if (last.getImagePath() != null && !last.getImagePath().isEmpty()) return "📷 Photo";
+            if (last.getImagePath() != null && !last.getImagePath().isEmpty()) return "Vous avez envoyé une image";
             return last.getMessage() != null ? last.getMessage() : "Aucun message";
+        }
+    }
+
+    public String getLastMessageTimestamp(int conversationId) {
+        List<Message> list = messageCache.get(conversationId);
+        if (list == null || list.isEmpty()) {
+            list = getMessages(conversationId);
+        }
+        if (list == null || list.isEmpty()) return "";
+        synchronized (list) {
+            Message last = list.get(list.size() - 1);
+            return last != null && last.getCreatedAt() != null ? last.getCreatedAt() : "";
         }
     }
 

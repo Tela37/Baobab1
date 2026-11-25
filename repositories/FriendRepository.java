@@ -181,6 +181,30 @@ public class FriendRepository {
         return result;
     }
 
+    public List<FriendRequestItem> getSentRequests(int senderId) {
+        if (contextStatic != null) {
+            loadCachedFriendData(contextStatic);
+        }
+        List<FriendRequestItem> result = new ArrayList<>();
+        synchronized (pendingRequestsCache) {
+            for (FriendRequestItem item : pendingRequestsCache) {
+                if (item.senderId == senderId) {
+                    result.add(item);
+                }
+            }
+        }
+        return result;
+    }
+
+    public boolean isFriend(int userId1, int userId2) {
+        if (contextStatic != null) {
+            loadCachedFriendData(contextStatic);
+        }
+        int u1 = Math.min(userId1, userId2);
+        int u2 = Math.max(userId1, userId2);
+        return friendsMap.containsKey(u1 + "_" + u2);
+    }
+
     public FriendRequestItem getIncomingRequestFromUser(int receiverId, int senderId) {
         if (contextStatic != null) {
             loadCachedFriendData(contextStatic);
@@ -290,12 +314,6 @@ public class FriendRepository {
                     continue;
                 }
 
-                UserSearchItem item = new UserSearchItem();
-                item.userId = u.getId();
-                item.name = u.getName();
-                item.profileImage = u.getProfileImage();
-                item.isFriend = false;
-
                 boolean requestSent = false;
                 synchronized (pendingRequestsCache) {
                     for (FriendRequestItem req : pendingRequestsCache) {
@@ -305,7 +323,17 @@ public class FriendRepository {
                         }
                     }
                 }
-                item.requestSent = requestSent;
+
+                if (requestSent) {
+                    continue;
+                }
+
+                UserSearchItem item = new UserSearchItem();
+                item.userId = u.getId();
+                item.name = u.getName();
+                item.profileImage = u.getProfileImage();
+                item.isFriend = false;
+                item.requestSent = false;
 
                 results.add(item);
             }

@@ -22,6 +22,7 @@ public class ConversationRepository {
     private static final Map<Integer, ConversationData> convCache = new ConcurrentHashMap<>();
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
+    private final Context context;
 
     public static class ConversationData {
         public int id;
@@ -32,11 +33,36 @@ public class ConversationRepository {
     }
 
     public ConversationRepository(Context context) {
+        this.context = context != null ? context.getApplicationContext() : null;
         this.userRepository = new UserRepository(context);
         this.messageRepository = new MessageRepository(context);
+        loadConversationsFromRoom();
+    }
+
+    private void loadConversationsFromRoom() {
+        if (context == null) return;
+        try {
+            AppDatabase db = AppDatabase.getInstance(context);
+            if (db != null) {
+                List<td.teladoum.baobab.db.entities.ConversationEntity> entities = db.conversationDao().getAllConversations();
+                if (entities != null) {
+                    for (td.teladoum.baobab.db.entities.ConversationEntity entity : entities) {
+                        if (!convCache.containsKey(entity.conversationId)) {
+                            ConversationData data = new ConversationData();
+                            data.id = entity.conversationId;
+                            data.user2Id = entity.otherUserId;
+                            data.isPrivate = entity.isPrivate;
+                            data.isPinned = entity.isPinned;
+                            convCache.put(entity.conversationId, data);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     public ConversationRepository(Object dbHelper, UserRepository userRepository, MessageRepository messageRepository) {
+        this.context = null;
         this.userRepository = userRepository != null ? userRepository : new UserRepository();
         this.messageRepository = messageRepository != null ? messageRepository : new MessageRepository((Context) null);
     }
@@ -171,26 +197,68 @@ public class ConversationRepository {
 
     public List<ConversationItem> getConversations(int currentUserId) {
         List<ConversationItem> result = new ArrayList<>();
+        loadConversationsFromRoom();
+
         for (ConversationData data : convCache.values()) {
-            if (data.user1Id == currentUserId || data.user2Id == currentUserId) {
-                int otherUserId = (data.user1Id == currentUserId) ? data.user2Id : data.user1Id;
-                List<td.teladoum.baobab.models.Message> msgs = messageRepository.getMessages(data.id);
-                if (msgs != null && !msgs.isEmpty()) {
-                    result.add(
-                            new ConversationItem(
-                                    data.id,
-                                    otherUserId,
-                                    userRepository.getUserName(otherUserId),
-                                    messageRepository.getLastMessage(data.id),
-                                    userRepository.getUserProfileImage(otherUserId),
-                                    messageRepository.getUnreadCount(data.id, currentUserId),
-                                    data.isPrivate,
-                                    data.isPinned
-                            )
-                    );
+            int otherUserId = (data.user1Id == currentUserId) ? data.user2Id : (data.user2Id == currentUserId ? data.user1Id : data.user2Id);
+            if (otherUserId <= 0) continue;
+
+            result.add(
+                    new ConversationItem(
+                            data.id,
+                            otherUserId,
+                            userRepository.getUserName(otherUserId),
+                            messageRepository.getLastMessage(data.id),
+                            userRepository.getUserProfileImage(otherUserId),
+                            messageRepository.getUnreadCount(data.id, currentUserId),
+                            data.isPrivate,
+                            data.isPinned
+                    )
+            );
+        }
+
+        try {
+            AppDatabase db = AppDatabase.getInstance(context);
+            if (db != null) {
+                List<ConversationEntity> entities = db.conversationDao().getAllConversations();
+                if (entities != null) {
+                    for (ConversationEntity entity : entities) {
+                        boolean exists = false;
+                        for (ConversationItem item : result) {
+                            if (item.getConversationId() == entity.conversationId) {
+                                exists = true;
+                                break;
+                            }
+                        }
+                        if (!exists) {
+                            result.add(
+                                    new ConversationItem(
+                                            entity.conversationId,
+                                            entity.otherUserId,
+                                            userRepository.getUserName(entity.otherUserId),
+                                            messageRepository.getLastMessage(entity.conversationId),
+                                            userRepository.getUserProfileImage(entity.otherUserId),
+                                            messageRepository.getUnreadCount(entity.conversationId, currentUserId),
+                                            entity.isPrivate,
+                                            entity.isPinned
+                                    )
+                            );
+                        }
+                    }
                 }
             }
-        }
+        } catch (Exception ignored) {}
+
+        result.sort((c1, c2) -> {
+            if (c1.isPinned() != c2.isPinned()) {
+                return Boolean.compare(c2.isPinned(), c1.isPinned());
+            }
+            String t1 = messageRepository.getLastMessageTimestamp(c1.getConversationId());
+            String t2 = messageRepository.getLastMessageTimestamp(c2.getConversationId());
+            return t2.compareTo(t1);
+        });
+
+        saveConversationsToRoom(context, result);
         return result;
     }
 

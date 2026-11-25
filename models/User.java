@@ -18,6 +18,7 @@ public class User {
     private String email;
     private String password;
     private String profileImage;
+    private String coverImage;
     private String dob;
     private String neighborhood;
     private String city;
@@ -36,7 +37,9 @@ public class User {
 
     private boolean isAdmin;
     private boolean isVerified;
+    private boolean isCertified;
     private String bio;
+    private String firebaseUid;
 
     public User() {
     }
@@ -321,11 +324,21 @@ public class User {
     }
 
     public boolean isVerified() {
-        return isVerified;
+        return isVerified || isCertified;
     }
 
     public void setVerified(boolean verified) {
         isVerified = verified;
+        isCertified = verified;
+    }
+
+    public boolean isCertified() {
+        return isVerified || isCertified;
+    }
+
+    public void setCertified(boolean certified) {
+        isCertified = certified;
+        isVerified = certified;
     }
 
     public String getBio() {
@@ -334,6 +347,22 @@ public class User {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getCoverImage() {
+        return coverImage;
+    }
+
+    public void setCoverImage(String coverImage) {
+        this.coverImage = coverImage;
+    }
+
+    public String getFirebaseUid() {
+        return firebaseUid;
+    }
+
+    public void setFirebaseUid(String firebaseUid) {
+        this.firebaseUid = firebaseUid;
     }
 }
 

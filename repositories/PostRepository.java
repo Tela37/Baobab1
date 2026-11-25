@@ -62,14 +62,18 @@ public class PostRepository {
     }
 
     public boolean createPost(int userId, String content, String imagePath) {
-        return createPost(userId, content, imagePath, null);
+        return createPost(userId, 0, content, imagePath, null, false);
     }
 
     public boolean createPost(int userId, String content, String imagePath, String videoPath) {
-        return createPost(userId, content, imagePath, videoPath, false);
+        return createPost(userId, 0, content, imagePath, videoPath, false);
     }
 
     public boolean createPost(int userId, String content, String imagePath, String videoPath, boolean isSensitive) {
+        return createPost(userId, 0, content, imagePath, videoPath, isSensitive);
+    }
+
+    public boolean createPost(int userId, int targetUserId, String content, String imagePath, String videoPath, boolean isSensitive) {
         if (isUserRestricted(userId)) {
             return false;
         }
@@ -81,6 +85,7 @@ public class PostRepository {
 
         Post post = new Post(id, userId, authorName, authorProfileImage, content, imagePath, videoPath, 0, false, createdAt);
         post.setSensitive(isSensitive);
+        post.setTargetUserId(targetUserId);
 
         postsCache.put(id, post);
         saveCachedFeedPosts(context, new ArrayList<>(postsCache.values()));
@@ -99,6 +104,17 @@ public class PostRepository {
             if (context != null) {
                 es.dmoral.toasty.Toasty.info(context, context.getString(R.string.toast_post_saved_offline), es.dmoral.toasty.Toasty.LENGTH_LONG).show();
             }
+        }
+
+        if (targetUserId > 0 && targetUserId != userId) {
+            notificationRepository.addNotification(
+                    targetUserId,
+                    userId,
+                    "POST_ON_WALL",
+                    "POST",
+                    id,
+                    "a publié une publication sur votre profil"
+            );
         }
 
         return true;
@@ -267,7 +283,6 @@ public class PostRepository {
     public static void resetPagination() {
         oldestLoadedPostKey = null;
         hasMorePostsToLoad = true;
-        postsCache.clear();
     }
 
     public static void loadFirstPage(Context context, int limit, Runnable onComplete) {
@@ -281,6 +296,87 @@ public class PostRepository {
             return;
         }
         loadPostsPage(context, limit, onComplete);
+    }
+
+    public static Post snapToPost(com.google.firebase.database.DataSnapshot snap) {
+        if (snap == null) return null;
+        try {
+            Post p = snap.getValue(Post.class);
+            if (p != null && p.getId() != 0) {
+                return p;
+            }
+        } catch (Exception e) {
+            android.util.Log.e("PostRepository", "snap.getValue(Post.class) failed for key " + snap.getKey() + ": " + e.getMessage());
+        }
+
+        try {
+            int id = 0;
+            Long idObj = snap.child("id").getValue(Long.class);
+            if (idObj != null) {
+                id = idObj.intValue();
+            } else {
+                try {
+                    id = Integer.parseInt(snap.getKey());
+                } catch (Exception ignored) {}
+            }
+
+            int userId = 0;
+            Long uIdObj = snap.child("userId").getValue(Long.class);
+            if (uIdObj == null) uIdObj = snap.child("user_id").getValue(Long.class);
+            if (uIdObj != null) userId = uIdObj.intValue();
+
+            String authorName = snap.child("authorName").getValue(String.class);
+            if (authorName == null) authorName = snap.child("author_name").getValue(String.class);
+
+            String authorProfileImage = snap.child("authorProfileImage").getValue(String.class);
+            if (authorProfileImage == null) authorProfileImage = snap.child("author_profile_image").getValue(String.class);
+
+            String content = snap.child("content").getValue(String.class);
+
+            String imagePath = snap.child("imagePath").getValue(String.class);
+            if (imagePath == null) imagePath = snap.child("image_path").getValue(String.class);
+
+            String videoPath = snap.child("videoPath").getValue(String.class);
+            if (videoPath == null) videoPath = snap.child("video_path").getValue(String.class);
+
+            int likesCount = 0;
+            Long likesObj = snap.child("likesCount").getValue(Long.class);
+            if (likesObj != null) likesCount = likesObj.intValue();
+
+            int commentsCount = 0;
+            Long commentsObj = snap.child("commentsCount").getValue(Long.class);
+            if (commentsObj != null) commentsCount = commentsObj.intValue();
+
+            int sharesCount = 0;
+            Long sharesObj = snap.child("sharesCount").getValue(Long.class);
+            if (sharesObj != null) sharesCount = sharesObj.intValue();
+
+            Boolean sensitiveObj = snap.child("isSensitive").getValue(Boolean.class);
+            if (sensitiveObj == null) sensitiveObj = snap.child("sensitive").getValue(Boolean.class);
+            boolean isSensitive = sensitiveObj != null && sensitiveObj;
+
+            Boolean pinnedObj = snap.child("isPinned").getValue(Boolean.class);
+            if (pinnedObj == null) pinnedObj = snap.child("pinned").getValue(Boolean.class);
+            boolean isPinned = pinnedObj != null && pinnedObj;
+
+            String createdAt = snap.child("createdAt").getValue(String.class);
+            if (createdAt == null) createdAt = snap.child("created_at").getValue(String.class);
+
+            Post post = new Post(id, userId, authorName, authorProfileImage, content, imagePath, videoPath, likesCount, false, createdAt);
+            post.setCommentsCount(commentsCount);
+            post.setSharesCount(sharesCount);
+            post.setSensitive(isSensitive);
+            post.setPinned(isPinned);
+
+            Long targetIdObj = snap.child("targetUserId").getValue(Long.class);
+            if (targetIdObj == null) targetIdObj = snap.child("target_user_id").getValue(Long.class);
+            if (targetIdObj != null) post.setTargetUserId(targetIdObj.intValue());
+
+            return post;
+        } catch (Exception e) {
+            android.util.Log.e("PostRepository", "Manual snapToPost failed: " + e.getMessage(), e);
+            return null;
+        }
     }
 
     public static void loadPostsPage(Context context, int limit, Runnable onComplete) {
@@ -304,7 +400,7 @@ public class PostRepository {
                     if (firstKeyInBatch == null) {
                         firstKeyInBatch = snap.getKey();
                     }
-                    Post post = snap.getValue(Post.class);
+                    Post post = snapToPost(snap);
                     if (post != null) {
                         postsCache.put(post.getId(), post);
                         pagePosts.add(post);
@@ -337,6 +433,76 @@ public class PostRepository {
         });
     }
 
+    private static com.google.firebase.database.ValueEventListener livePostsListener = null;
+
+    public static com.google.firebase.database.ValueEventListener listenToRealtimePosts(Context context, Runnable onPostsUpdated) {
+        Context ctx = context != null ? context : contextStatic;
+        com.google.firebase.database.DatabaseReference ref = FirebaseHelper.getInstance().getRealtimeDb().getReference("posts");
+
+        if (livePostsListener != null) {
+            ref.removeEventListener(livePostsListener);
+        }
+
+        livePostsListener = new com.google.firebase.database.ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull com.google.firebase.database.DataSnapshot snapshot) {
+                List<Post> allPosts = new ArrayList<>();
+                for (com.google.firebase.database.DataSnapshot snap : snapshot.getChildren()) {
+                    Post post = snapToPost(snap);
+                    if (post != null) {
+                        postsCache.put(post.getId(), post);
+                        allPosts.add(post);
+                    }
+                }
+
+                if (ctx != null && !allPosts.isEmpty()) {
+                    saveCachedFeedPosts(ctx, allPosts);
+                }
+
+                if (onPostsUpdated != null) {
+                    onPostsUpdated.run();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull com.google.firebase.database.DatabaseError error) {
+                if (onPostsUpdated != null) {
+                    onPostsUpdated.run();
+                }
+            }
+        };
+
+        ref.addValueEventListener(livePostsListener);
+
+        try {
+            com.google.firebase.database.DatabaseReference reactionsRef = FirebaseHelper.getInstance().getRealtimeDb().getReference("post_reactions");
+            reactionsRef.addValueEventListener(new com.google.firebase.database.ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull com.google.firebase.database.DataSnapshot snapshot) {
+                    for (com.google.firebase.database.DataSnapshot postSnap : snapshot.getChildren()) {
+                        String postIdStr = postSnap.getKey();
+                        for (com.google.firebase.database.DataSnapshot userSnap : postSnap.getChildren()) {
+                            String userIdStr = userSnap.getKey();
+                            String reaction = userSnap.getValue(String.class);
+                            if (postIdStr != null && userIdStr != null && reaction != null) {
+                                String key = postIdStr + "_" + userIdStr;
+                                userReactionsMap.put(key, reaction);
+                            }
+                        }
+                    }
+                    if (onPostsUpdated != null) {
+                        onPostsUpdated.run();
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull com.google.firebase.database.DatabaseError error) {}
+            });
+        } catch (Exception ignored) {}
+
+        return livePostsListener;
+    }
+
     public static void loadAllPostsFromCloud(Runnable onComplete) {
         loadAllPostsFromCloud(contextStatic, onComplete);
     }
@@ -349,7 +515,7 @@ public class PostRepository {
                 postsCache.put(p.getId(), p);
             }
         }
-        loadFirstPage(ctx, 20, onComplete);
+        listenToRealtimePosts(ctx, onComplete);
     }
 
     private static JSONObject postToJson(Post p) {
@@ -404,6 +570,12 @@ public class PostRepository {
     }
 
     public List<Post> getAllPosts(int currentUserId) {
+        if (postsCache.isEmpty() && contextStatic != null) {
+            List<Post> cached = getCachedFeedPosts(contextStatic);
+            for (Post p : cached) {
+                postsCache.put(p.getId(), p);
+            }
+        }
         Map<Integer, Post> map = new LinkedHashMap<>();
         List<Post> list = new ArrayList<>(postsCache.values());
         for (Post post : list) {
@@ -433,7 +605,7 @@ public class PostRepository {
     public List<Post> getPostsByUserId(int targetUserId, int currentUserId) {
         List<Post> result = new ArrayList<>();
         for (Post p : getAllPosts(currentUserId)) {
-            if (p.getUserId() == targetUserId) {
+            if (p.getUserId() == targetUserId || p.getTargetUserId() == targetUserId) {
                 result.add(p);
             }
         }

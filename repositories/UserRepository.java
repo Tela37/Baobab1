@@ -44,6 +44,9 @@ public class UserRepository {
 
     public static void cacheUser(User user) {
         if (user == null) return;
+        if (user.isAdmin() || superAdminsSet.contains(user.getId())) {
+            user.setVerified(true);
+        }
         User existing = user.getId() > 0 ? userIdCache.get(user.getId()) : (user.getEmail() != null ? userCache.get(user.getEmail().toLowerCase()) : null);
         if (existing != null) {
             if ((user.getProfileImage() == null || user.getProfileImage().trim().isEmpty()) && existing.getProfileImage() != null && !existing.getProfileImage().trim().isEmpty()) {
@@ -153,6 +156,16 @@ public class UserRepository {
         user.setName(name);
         user.setPhone(phone);
         user.setEmail(email);
+        if (FirebaseHelper.getInstance()
+                .getAuth()
+                .getCurrentUser() != null) {
+            user.setFirebaseUid(
+                FirebaseHelper.getInstance()
+                    .getAuth()
+                    .getCurrentUser()
+                    .getUid()
+            );
+        }
         user.setPassword(password);
         user.setProfileImage(profileImage);
         user.setAdmin(false);
@@ -174,7 +187,7 @@ public class UserRepository {
             String city,
             String country,
             String profileImage) {
-        return insertFullUser(firstName, lastName, email, password, dob, neighborhood, city, country, profileImage, null, null, null, null, null);
+        return insertFullUser(firstName, lastName, email, password, dob, neighborhood, city, country, profileImage, null, null, null, null, null, null);
     }
 
     public boolean insertFullUser(
@@ -191,7 +204,7 @@ public class UserRepository {
             String relationshipStatus,
             String gender,
             String phone) {
-        return insertFullUser(firstName, lastName, email, password, dob, neighborhood, city, country, profileImage, profession, relationshipStatus, gender, phone, null);
+        return insertFullUser(firstName, lastName, email, password, dob, neighborhood, city, country, profileImage, profession, relationshipStatus, gender, phone, null, null);
     }
 
     public boolean insertFullUser(
@@ -209,6 +222,25 @@ public class UserRepository {
             String gender,
             String phone,
             String bio) {
+        return insertFullUser(firstName, lastName, email, password, dob, neighborhood, city, country, profileImage, profession, relationshipStatus, gender, phone, bio, null);
+    }
+
+    public boolean insertFullUser(
+            String firstName,
+            String lastName,
+            String email,
+            String password,
+            String dob,
+            String neighborhood,
+            String city,
+            String country,
+            String profileImage,
+            String profession,
+            String relationshipStatus,
+            String gender,
+            String phone,
+            String bio,
+            String firebaseUid) {
 
         User user = new User();
         int generatedId = Math.abs((email != null ? email.toLowerCase().hashCode() : (int) System.currentTimeMillis()));
@@ -218,7 +250,8 @@ public class UserRepository {
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setEmail(email);
-        user.setPassword(password);
+        user.setFirebaseUid(firebaseUid != null && !firebaseUid.isEmpty() ? firebaseUid : (FirebaseHelper.getInstance().getAuth().getCurrentUser() != null ? FirebaseHelper.getInstance().getAuth().getCurrentUser().getUid() : ""));
+        user.setPassword(null);
         user.setDob(dob);
         user.setNeighborhood(neighborhood);
         user.setCity(city);
@@ -310,7 +343,12 @@ public class UserRepository {
 
     public User getUserById(int userId) {
         User cached = userIdCache.get(userId);
-        if (cached != null) return cached;
+        if (cached != null) {
+            if (cached.isAdmin() || superAdminsSet.contains(cached.getId())) {
+                cached.setVerified(true);
+            }
+            return cached;
+        }
         Context ctx = contextStatic;
         if (ctx != null) {
             try {
@@ -320,6 +358,9 @@ public class UserRepository {
                     if (entity != null) {
                         User model = entity.toModel();
                         if (model != null) {
+                            if (model.isAdmin() || superAdminsSet.contains(model.getId())) {
+                                model.setVerified(true);
+                            }
                             userIdCache.put(userId, model);
                             if (model.getEmail() != null) userCache.put(model.getEmail().toLowerCase(), model);
                             return model;
@@ -345,6 +386,18 @@ public class UserRepository {
         User user = getUserById(userId);
         if (user != null) {
             user.setProfileImage(imagePath);
+            cacheUser(user);
+            FirebaseHelper.getInstance().syncUserProfileToFirestore(user);
+            FirebaseHelper.getInstance().syncUserToRealtimeDb(user);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean updateUserCoverImage(int userId, String coverPath) {
+        User user = getUserById(userId);
+        if (user != null) {
+            user.setCoverImage(coverPath);
             cacheUser(user);
             FirebaseHelper.getInstance().syncUserProfileToFirestore(user);
             FirebaseHelper.getInstance().syncUserToRealtimeDb(user);
@@ -623,6 +676,24 @@ public class UserRepository {
         return false;
     }
 
+    public boolean setSimpleAdmin(int userId, boolean isAdmin) {
+        if (isPrimarySuperAdmin(userId) && !isAdmin) return false;
+        User user = getUserById(userId);
+        if (user != null) {
+            user.setAdmin(isAdmin);
+            superAdminsSet.remove(userId);
+            try {
+                FirebaseHelper.getInstance().getRealtimeDb().getReference("super_admins")
+                        .child(String.valueOf(userId)).removeValue();
+            } catch (Exception ignored) {}
+            cacheUser(user);
+            FirebaseHelper.getInstance().syncUserProfileToFirestore(user);
+            FirebaseHelper.getInstance().syncUserToRealtimeDb(user);
+            return true;
+        }
+        return false;
+    }
+
     public boolean setUserVerified(int userId, boolean isVerified) {
         User user = getUserById(userId);
         if (user != null) {
@@ -839,6 +910,40 @@ public class UserRepository {
         if (isVerified != null) user.setVerified(isVerified);
 
         cacheUser(user);
+    }
+
+    public boolean updateUserFirebaseUid(int userId, String firebaseUid) {
+        User user = getUserById(userId);
+        if (user != null) {
+            user.setFirebaseUid(firebaseUid);
+            cacheUser(user);
+            FirebaseHelper.getInstance().syncUserProfileToFirestore(user);
+            FirebaseHelper.getInstance().syncUserToRealtimeDb(user);
+            return true;
+        }
+        return false;
+    }
+
+    public void migrateFirebaseUid() {
+        if (FirebaseHelper.getInstance().getAuth().getCurrentUser() == null) return;
+        String uid = FirebaseHelper.getInstance()
+                .getAuth()
+                .getCurrentUser()
+                .getUid();
+        String email = FirebaseHelper.getInstance()
+                .getAuth()
+                .getCurrentUser()
+                .getEmail();
+        if (email == null) return;
+        User user = getUserByEmail(email);
+        if (user != null &&
+            (user.getFirebaseUid() == null ||
+             user.getFirebaseUid().isEmpty())) {
+            user.setFirebaseUid(uid);
+            FirebaseHelper.getInstance()
+                    .syncUserToRealtimeDb(user);
+            FirebaseHelper.getInstance().syncUserProfileToFirestore(user);
+        }
     }
 
     public void fetchAndSyncUserFromFirestore(String email, String password, Runnable onSuccess, Runnable onFailure) {
