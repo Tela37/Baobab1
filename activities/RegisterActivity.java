@@ -9,11 +9,6 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
-
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,16 +29,14 @@ import java.util.Arrays;
 import es.dmoral.toasty.Toasty;
 import td.teladoum.baobab.R;
 import td.teladoum.baobab.models.User;
-import td.teladoum.baobab.firebase.FirebaseHelper;
 import td.teladoum.baobab.repositories.NotificationRepository;
 import td.teladoum.baobab.repositories.UserRepository;
-import td.teladoum.baobab.utils.PasswordUtils;
 import td.teladoum.baobab.utils.SessionManager;
+import td.teladoum.baobab.viewmodels.RegisterViewModel;
 
 /**
- * Activité d'inscription (Register).
- * Valide le format de l'adresse email, vérifie la confirmation du mot de passe
- * et enregistre le nouveau compte dans la base de données.
+ * Activité d'inscription (Register) suivant l'architecture MVVM.
+ * Délègue la logique métier à RegisterViewModel.
  */
 public class RegisterActivity extends AppCompatActivity {
 
@@ -59,7 +52,7 @@ public class RegisterActivity extends AppCompatActivity {
     private CallbackManager callbackManager;
     private SessionManager sessionManager;
 
-    private td.teladoum.baobab.viewmodels.RegisterViewModel registerViewModel;
+    private RegisterViewModel registerViewModel;
     private UserRepository userRepository;
 
     @Override
@@ -68,8 +61,7 @@ public class RegisterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        // 2. Ajuster les paddings pour ne pas recouvrir le contenu sous les barres système
-        android.view.View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
+        View mainContainer = findViewById(getResources().getIdentifier("main_container", "id", getPackageName()));
         if (mainContainer == null) {
             mainContainer = findViewById(android.R.id.content);
         }
@@ -86,7 +78,6 @@ public class RegisterActivity extends AppCompatActivity {
 
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         if (controller != null) {
-            // true = icônes sombres (pour fond clair), false = icônes blanches (pour fond sombre)
             controller.setAppearanceLightStatusBars(true);
             controller.setAppearanceLightNavigationBars(true);
         }
@@ -106,18 +97,43 @@ public class RegisterActivity extends AppCompatActivity {
         btnFacebookLogin = findViewById(R.id.btnFacebookLogin);
         setupFacebookLogin();
 
-        registerViewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.RegisterViewModel.class);
+        userRepository = new UserRepository(this);
+
+        registerViewModel = new androidx.lifecycle.ViewModelProvider(this).get(RegisterViewModel.class);
+
         registerViewModel.getIsLoadingLiveData().observe(this, isLoading -> {
             if (progressBar != null) progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
             if (btnRegister != null) btnRegister.setEnabled(!isLoading);
         });
+
         registerViewModel.getErrorMessageLiveData().observe(this, msg -> {
             if (msg != null && !msg.isEmpty()) {
                 Toasty.error(this, msg, Toasty.LENGTH_SHORT).show();
             }
         });
 
-        userRepository = new UserRepository(this);
+        registerViewModel.getRegisterSuccessLiveData().observe(this, event -> {
+            if (event != null) {
+                if (event.phone == null) {
+                    Toasty.info(RegisterActivity.this, "Un e-mail de vérification a été envoyé à votre adresse 📩", Toasty.LENGTH_LONG).show();
+                }
+                Intent intent = new Intent(RegisterActivity.this, CreateProfileActivity.class);
+                intent.putExtra("email", event.email);
+                intent.putExtra("password", event.hashedPassword);
+                intent.putExtra("firebaseUid", event.firebaseUid);
+                if (event.phone != null) {
+                    intent.putExtra("phone", event.phone);
+                }
+                startActivity(intent);
+                finish();
+            }
+        });
+
+        registerViewModel.getPhoneVerificationNeededLiveData().observe(this, event -> {
+            if (event != null) {
+                LoginActivity.showPhoneVerificationDialog(this, event.phone, event.onVerified);
+            }
+        });
 
         cbShowPassword.setOnCheckedChangeListener((buttonView, isChecked) -> {
             int inputType = isChecked
@@ -190,59 +206,7 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        if (userRepository.identifierExists(identifier)) {
-            etEmail.setError(getString(R.string.error_email_exists));
-            etEmail.requestFocus();
-            return;
-        }
-
-        boolean isPhone = !UserRepository.isEmailInput(identifier);
-        String registerEmail = isPhone ? "phone_" + UserRepository.cleanPhone(identifier) + "@baobabtd.app" : identifier;
-
-        if (isPhone) {
-            LoginActivity.showPhoneVerificationDialog(this, identifier, () -> proceedRegistration(registerEmail, password, identifier));
-        } else {
-            proceedRegistration(registerEmail, password, null);
-        }
-    }
-
-    private void proceedRegistration(String email, String password, String phone) {
-        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
-        btnRegister.setEnabled(false);
-
-        String hashedPassword = PasswordUtils.hashPassword(password);
-
-        // Enregistrement cloud dans Firebase Auth avec vérification
-        FirebaseHelper.getInstance().registerUser(email, password, task -> {
-            if (task.isSuccessful() || (task.getException() != null && task.getException().getMessage() != null && task.getException().getMessage().contains("already in use"))) {
-                com.google.firebase.auth.FirebaseUser fbUser = FirebaseHelper.getInstance().getAuth().getCurrentUser();
-                String firebaseUid = "";
-                if (fbUser != null) {
-                    firebaseUid = fbUser.getUid();
-                }
-                if (fbUser != null && !fbUser.isEmailVerified() && phone == null) {
-                    try {
-                        fbUser.sendEmailVerification();
-                    } catch (Exception ignored) {}
-                    Toasty.info(RegisterActivity.this, "Un e-mail de vérification a été envoyé à votre adresse 📩", Toasty.LENGTH_LONG).show();
-                }
-                if (progressBar != null) progressBar.setVisibility(View.GONE);
-                Intent intent = new Intent(RegisterActivity.this, CreateProfileActivity.class);
-                intent.putExtra("email", email);
-                intent.putExtra("password", hashedPassword);
-                intent.putExtra("firebaseUid", firebaseUid);
-                if (phone != null) {
-                    intent.putExtra("phone", phone);
-                }
-                startActivity(intent);
-                finish();
-            } else {
-                if (progressBar != null) progressBar.setVisibility(View.GONE);
-                btnRegister.setEnabled(true);
-                String errorMsg = task.getException() != null ? task.getException().getMessage() : "Erreur d'inscription Cloud";
-                Toasty.error(RegisterActivity.this, errorMsg, Toasty.LENGTH_LONG).show();
-            }
-        });
+        registerViewModel.register(identifier, password, confirmPassword);
     }
 
     @Override
@@ -293,7 +257,7 @@ public class RegisterActivity extends AppCompatActivity {
                                         onSocialLoginSuccess(email, name, photoUrl);
 
                                     } catch (Exception e) {
-                                        android.widget.Toast.makeText(RegisterActivity.this, "Erreur de traitement profil Facebook", android.widget.Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(RegisterActivity.this, "Erreur de traitement profil Facebook", Toast.LENGTH_SHORT).show();
                                     }
                                 }
                         );
@@ -311,7 +275,7 @@ public class RegisterActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(FacebookException error) {
-                        Toasty.error(RegisterActivity.this, "Erreur Facebook: " + error.getMessage(), Toasty.LENGTH_SHORT).show();
+                        Toasty.error(RegisterActivity.this, "Erreur Facebook: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -333,12 +297,11 @@ public class RegisterActivity extends AppCompatActivity {
                     user.getProfileImage()
             );
 
-            Toasty.success(this, "Bienvenue " + user.getName(), android.widget.Toast.LENGTH_SHORT).show();
+            Toasty.success(this, "Bienvenue " + user.getName(), Toast.LENGTH_SHORT).show();
             startActivity(new Intent(RegisterActivity.this, AcceuilActivity.class));
             finish();
         } else {
-            Toasty.warning(this, "Erreur lors de la connexion sociale", Toasty.LENGTH_SHORT).show();
+            Toasty.warning(this, "Erreur lors de la connexion sociale", Toast.LENGTH_SHORT).show();
         }
     }
 }
-

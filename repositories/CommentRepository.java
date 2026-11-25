@@ -148,7 +148,27 @@ public class CommentRepository {
     }
 
     public static void saveCachedComments(Context context, int postId, List<Comment> comments) {
+        saveCachedComments(context, postId, comments, true);
+    }
+
+    public static void saveCachedComments(Context context, int postId, List<Comment> comments, boolean isSynced) {
         if (context == null) return;
+        new Thread(() -> {
+            try {
+                td.teladoum.baobab.db.AppDatabase db = td.teladoum.baobab.db.AppDatabase.getInstance(context);
+                if (db != null && comments != null) {
+                    List<td.teladoum.baobab.db.entities.CommentEntity> entities = new ArrayList<>();
+                    synchronized (comments) {
+                        for (Comment c : comments) {
+                            td.teladoum.baobab.db.entities.CommentEntity entity = td.teladoum.baobab.db.entities.CommentEntity.fromModel(c, isSynced);
+                            if (entity != null) entities.add(entity);
+                        }
+                    }
+                    db.commentDao().insertComments(entities);
+                }
+            } catch (Exception ignored) {}
+        }).start();
+
         try {
             SharedPreferences prefs = context.getSharedPreferences(PREF_CACHED_COMMENTS, Context.MODE_PRIVATE);
             JSONArray array = new JSONArray();
@@ -169,6 +189,22 @@ public class CommentRepository {
     public static List<Comment> getCachedComments(Context context, int postId) {
         List<Comment> list = Collections.synchronizedList(new ArrayList<>());
         if (context == null) return list;
+        try {
+            td.teladoum.baobab.db.AppDatabase db = td.teladoum.baobab.db.AppDatabase.getInstance(context);
+            if (db != null) {
+                List<td.teladoum.baobab.db.entities.CommentEntity> entities = db.commentDao().getCommentsForPost(postId);
+                if (entities != null && !entities.isEmpty()) {
+                    for (td.teladoum.baobab.db.entities.CommentEntity entity : entities) {
+                        Comment c = entity.toModel();
+                        if (c != null) {
+                            list.add(c);
+                        }
+                    }
+                    return list;
+                }
+            }
+        } catch (Exception ignored) {}
+
         try {
             SharedPreferences prefs = context.getSharedPreferences(PREF_CACHED_COMMENTS, Context.MODE_PRIVATE);
             String jsonStr = prefs.getString("comments_post_" + postId, "[]");
@@ -274,13 +310,25 @@ public class CommentRepository {
         list.add(commentObj);
 
         Context ctx = context != null ? context : contextStatic;
+        boolean synced = false;
+        if (PostRepository.isNetworkAvailable(ctx)) {
+            try {
+                FirebaseHelper.getInstance().syncCommentToRealtimeDb(postId, commentObj);
+                synced = true;
+            } catch (Exception e) {
+                synced = false;
+                td.teladoum.baobab.workers.BaobabSyncScheduler.triggerImmediateSync(ctx);
+            }
+        } else {
+            synced = false;
+            td.teladoum.baobab.workers.BaobabSyncScheduler.triggerImmediateSync(ctx);
+        }
+
         if (ctx != null) {
-            saveCachedComments(ctx, postId, list);
+            saveCachedComments(ctx, postId, list, synced);
         }
 
         PostRepository.incrementPostCommentsCount(postId);
-
-        FirebaseHelper.getInstance().syncCommentToRealtimeDb(postId, commentObj);
 
         String snippet = (content != null && !content.trim().isEmpty()) ? (content.length() > 35 ? content.substring(0, 35) + "..." : content) : "Image partagée";
         notificationRepository.addNotification(currentUserId, currentUserId, "POST_COMMENT", "POST", postId, "Un commentaire a été ajouté : \"" + snippet + "\"");

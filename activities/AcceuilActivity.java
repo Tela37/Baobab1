@@ -1312,12 +1312,47 @@ public class AcceuilActivity extends AppCompatActivity {
 
     private void loadPosts() {
         List<Post> newPosts = postRepository.getAllPosts(sessionManager.getUserId());
+        if (newPosts != null) {
+            FriendRepository friendRepo = new FriendRepository(this);
+            int currentUserId = sessionManager.getUserId();
+
+            newPosts.sort((p1, p2) -> {
+                if (p1.isPinned() && !p2.isPinned()) return -1;
+                if (!p1.isPinned() && p2.isPinned()) return 1;
+
+                double score1 = calculatePostScore(p1, currentUserId, friendRepo);
+                double score2 = calculatePostScore(p2, currentUserId, friendRepo);
+                return Double.compare(score2, score1);
+            });
+        }
         fullPostList.clear();
-        fullPostList.addAll(newPosts);
+        if (newPosts != null) fullPostList.addAll(newPosts);
 
         postList.clear();
-        postList.addAll(newPosts);
+        if (newPosts != null) postList.addAll(newPosts);
         postAdapter.updatePosts(postList);
+    }
+
+    private double calculatePostScore(Post post, int currentUserId, FriendRepository friendRepo) {
+        if (post.isPinned()) return Double.MAX_VALUE;
+
+        double likesWeight = 2.0;
+        double commentsWeight = 3.0;
+        double sharesWeight = 1.5;
+
+        double baseScore = (post.getLikesCount() * likesWeight) +
+                           (post.getCommentsCount() * commentsWeight) +
+                           (post.getSharesCount() * sharesWeight);
+
+        boolean isSelf = post.getUserId() == currentUserId;
+        boolean isFriend = friendRepo.isFriend(currentUserId, post.getUserId());
+        if (isSelf || isFriend) {
+            baseScore += 15.0;
+        }
+
+        long hoursOld = td.teladoum.baobab.utils.TimeUtils.getHoursSince(post.getCreatedAt());
+        double gravity = 1.5;
+        return baseScore / Math.pow(hoursOld + 2.0, gravity);
     }
 
     /**

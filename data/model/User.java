@@ -29,6 +29,7 @@ public class User {
     private boolean isOnline;
     private String lastSeen;
     private String fcmToken;
+    private String badge;
 
     public User() {
     }
@@ -207,5 +208,13 @@ public class User {
 
     public void setFcmToken(String fcmToken) {
         this.fcmToken = fcmToken;
+    }
+
+    public String getBadge() {
+        return badge;
+    }
+
+    public void setBadge(String badge) {
+        this.badge = badge;
     }
 }

@@ -24,10 +24,16 @@ public class UserEntity {
     public boolean isSuspended;
     public boolean isAdmin;
     public boolean isVerified;
+    public String badge;
+    public boolean isSynced = true;
 
     public UserEntity() {}
 
     public static UserEntity fromModel(User user) {
+        return fromModel(user, true);
+    }
+
+    public static UserEntity fromModel(User user, boolean isSynced) {
         if (user == null) return null;
         UserEntity entity = new UserEntity();
         entity.id = user.getId();
@@ -45,6 +51,8 @@ public class UserEntity {
         entity.isSuspended = user.isSuspended();
         entity.isAdmin = user.isAdmin();
         entity.isVerified = user.isVerified();
+        entity.badge = user.getBadge();
+        entity.isSynced = isSynced;
         return entity;
     }
 
@@ -60,6 +68,7 @@ public class UserEntity {
         u.setSuspended(isSuspended);
         u.setAdmin(isAdmin);
         u.setVerified(isVerified);
+        u.setBadge(badge);
         return u;
     }
 }

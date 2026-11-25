@@ -133,8 +133,14 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             displayName += " 🏆";
         }
         User postAuthor = userRepo.getUserById(post.getUserId());
-        if (postAuthor != null && postAuthor.isVerified()) {
-            displayName = displayName + " 🔵";
+        if (postAuthor != null) {
+            String badgeDisplay = td.teladoum.baobab.utils.BadgeManager.getBadgeDisplay(postAuthor.getBadge());
+            if (badgeDisplay != null && !badgeDisplay.isEmpty()) {
+                displayName += " (" + badgeDisplay + ")";
+            }
+            if (postAuthor.isVerified()) {
+                displayName = displayName + " 🔵";
+            }
         }
         holder.tvPostAuthorName.setText(displayName);
         holder.tvPostTime.setText(formatTime(post.getCreatedAt()));
@@ -237,32 +243,40 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             }
         }
 
-        String stats = post.getLikesCount() + " j'aime  •  " + post.getCommentsCount() + " commentaires  •  " + post.getSharesCount() + " partages";
-        holder.tvLikesCount.setText(stats);
-
         String reaction = post.getUserReactionType();
+        String reactionEmoji = "👍";
         if ("LOVE".equalsIgnoreCase(reaction)) {
             holder.btnLikePost.setText("❤️ J'adore");
             holder.btnLikePost.setTextColor(Color.RED);
+            reactionEmoji = "❤️";
         } else if ("HAHA".equalsIgnoreCase(reaction)) {
-            holder.btnLikePost.setText("😆 Haha");
+            holder.btnLikePost.setText("😂 Haha");
             holder.btnLikePost.setTextColor(Color.parseColor("#FF9800"));
+            reactionEmoji = "😂";
         } else if ("WOW".equalsIgnoreCase(reaction)) {
             holder.btnLikePost.setText("😮 Wouah");
             holder.btnLikePost.setTextColor(Color.parseColor("#2196F3"));
+            reactionEmoji = "😮";
         } else if ("SAD".equalsIgnoreCase(reaction)) {
             holder.btnLikePost.setText("😢 Triste");
             holder.btnLikePost.setTextColor(Color.parseColor("#9C27B0"));
+            reactionEmoji = "😢";
         } else if ("ANGRY".equalsIgnoreCase(reaction)) {
             holder.btnLikePost.setText("😡 En colère");
             holder.btnLikePost.setTextColor(Color.RED);
+            reactionEmoji = "😡";
         } else if ("LIKE".equalsIgnoreCase(reaction) || post.isLikedByCurrentUser()) {
             holder.btnLikePost.setText("👍 J'aime");
             holder.btnLikePost.setTextColor(Color.parseColor("#2196F3"));
+            reactionEmoji = "👍";
         } else {
-            holder.btnLikePost.setText("🤍 J'aime");
+            holder.btnLikePost.setText("👍 J'aime");
             holder.btnLikePost.setTextColor(Color.GRAY);
+            reactionEmoji = "👍";
         }
+
+        String stats = reactionEmoji + " " + post.getLikesCount() + " réactions  •  " + post.getCommentsCount() + " commentaires  •  " + post.getSharesCount() + " partages";
+        holder.tvLikesCount.setText(stats);
 
         holder.btnLikePost.setOnClickListener(v -> {
             if (listener != null) {
@@ -397,7 +411,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         String[] reactions = new String[]{
                 "👍 J'aime",
                 "❤️ J'adore",
-                "😆 Haha",
+                "😂 Haha",
                 "😮 Wouah",
                 "😢 Triste",
                 "😡 En colère",

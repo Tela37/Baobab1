@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,6 +20,7 @@ import androidx.core.view.WindowInsetsControllerCompat;
 
 import es.dmoral.toasty.Toasty;
 import td.teladoum.baobab.R;
+import td.teladoum.baobab.helpers.AdMobManager;
 import td.teladoum.baobab.helpers.GeminiHelper;
 
 /**
@@ -91,6 +93,21 @@ public class GeminiAssistantActivity extends AppCompatActivity {
         if (btnGenerate != null) {
             btnGenerate.setOnClickListener(v -> generateAiContent());
         }
+
+        Button btnRewardedAdBoost = findViewById(R.id.btnRewardedAdBoost);
+        if (btnRewardedAdBoost != null) {
+            btnRewardedAdBoost.setOnClickListener(v -> {
+                AdMobManager.showRewardedAd(this, rewardItem -> {
+                    Toasty.success(this, "Récompense obtenue ! Générations IA illimitées débloquées 🎉", Toast.LENGTH_LONG).show();
+                    etAiPrompt.setText("Rédige un contenu ultra-professionnel et persuasif pour : ");
+                }, () -> {
+                    // Si l'utilisateur ferme ou annule
+                });
+            });
+        }
+
+        AdMobManager.preloadRewardedAd(this);
+        AdMobManager.preloadInterstitialAd(this);
 
         Button btnCopy = findViewById(R.id.btnCopyResult);
         if (btnCopy != null) {

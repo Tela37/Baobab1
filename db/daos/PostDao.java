@@ -32,4 +32,10 @@ public interface PostDao {
 
     @Query("DELETE FROM posts")
     void deleteAll();
+
+    @Query("SELECT * FROM posts WHERE isSynced = 0")
+    List<PostEntity> getUnsyncedPosts();
+
+    @Query("UPDATE posts SET isSynced = 1 WHERE id = :postId")
+    void markPostSynced(int postId);
 }

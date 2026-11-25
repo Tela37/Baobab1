@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import dagger.hilt.android.qualifiers.ApplicationContext;
+
 import td.teladoum.baobab.db.AppDatabase;
 import td.teladoum.baobab.db.entities.MarketplaceEntity;
 import td.teladoum.baobab.firebase.FirebaseHelper;
@@ -26,12 +30,14 @@ import td.teladoum.baobab.utils.TimeUtils;
  * Synchronise les annonces en temps réel via Firebase Realtime Database (`marketplace_items`)
  * et assure la persistance hors-ligne locale avec Room Database.
  */
+@Singleton
 public class MarketplaceRepository {
 
     private static final Map<Integer, MarketplaceItem> itemCache = new ConcurrentHashMap<>();
     private final Context context;
 
-    public MarketplaceRepository(Context context) {
+    @Inject
+    public MarketplaceRepository(@ApplicationContext Context context) {
         this.context = context != null ? context.getApplicationContext() : null;
         loadFromRoom();
     }
@@ -50,7 +56,9 @@ public class MarketplaceRepository {
         }
         List<MarketplaceItem> filtered = new ArrayList<>();
         for (MarketplaceItem item : all) {
-            if (category.equalsIgnoreCase(item.getCategory())) {
+            String itemCat = item.getCategory() != null ? item.getCategory() : "";
+            if (category.equalsIgnoreCase(itemCat) ||
+                ("IMMOBILIER".equalsIgnoreCase(category) && "LOCATION".equalsIgnoreCase(itemCat))) {
                 filtered.add(item);
             }
         }

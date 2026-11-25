@@ -199,6 +199,10 @@ public class ProfileActivity extends AppCompatActivity {
         if (fullName.isEmpty()) {
             fullName = user.getName() != null ? user.getName() : "Utilisateur";
         }
+        String badgeDisplay = td.teladoum.baobab.utils.BadgeManager.getBadgeDisplay(user.getBadge());
+        if (badgeDisplay != null && !badgeDisplay.isEmpty()) {
+            fullName += " (" + badgeDisplay + ")";
+        }
         if (tvProfileLastName != null) tvProfileLastName.setText(fullName);
         if (tvProfileEmail != null) tvProfileEmail.setText(user.getEmail() != null ? user.getEmail() : "Non renseigné");
         if (tvProfileDob != null) tvProfileDob.setText(user.getDob() != null && !user.getDob().isEmpty() ? user.getDob() : "Non renseignée");

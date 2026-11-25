@@ -97,17 +97,24 @@ public class MessageRepository {
 
         List<Message> list = messageCache.computeIfAbsent(conversationId, k -> Collections.synchronizedList(new ArrayList<>()));
         list.add(msg);
-        saveMessagesToRoom(context, list);
 
+        boolean synced = false;
         if (isNetworkAvailable(context)) {
             try {
                 FirebaseHelper.getInstance().syncMessageToRealtimeDb(conversationId, msg);
+                synced = true;
             } catch (Exception e) {
                 saveOfflineMessage(context, msg);
+                synced = false;
+                td.teladoum.baobab.workers.BaobabSyncScheduler.triggerImmediateSync(context);
             }
         } else {
             saveOfflineMessage(context, msg);
+            synced = false;
+            td.teladoum.baobab.workers.BaobabSyncScheduler.triggerImmediateSync(context);
         }
+
+        saveMessagesToRoom(context, list, synced);
 
         return true;
     }
@@ -128,17 +135,24 @@ public class MessageRepository {
 
         List<Message> list = messageCache.computeIfAbsent(conversationId, k -> Collections.synchronizedList(new ArrayList<>()));
         list.add(msg);
-        saveMessagesToRoom(context, list);
 
+        boolean synced = false;
         if (isNetworkAvailable(context)) {
             try {
                 FirebaseHelper.getInstance().syncMessageToRealtimeDb(conversationId, msg);
+                synced = true;
             } catch (Exception e) {
                 saveOfflineMessage(context, msg);
+                synced = false;
+                td.teladoum.baobab.workers.BaobabSyncScheduler.triggerImmediateSync(context);
             }
         } else {
             saveOfflineMessage(context, msg);
+            synced = false;
+            td.teladoum.baobab.workers.BaobabSyncScheduler.triggerImmediateSync(context);
         }
+
+        saveMessagesToRoom(context, list, synced);
 
         return true;
     }
@@ -159,17 +173,24 @@ public class MessageRepository {
 
         List<Message> list = messageCache.computeIfAbsent(conversationId, k -> Collections.synchronizedList(new ArrayList<>()));
         list.add(msg);
-        saveMessagesToRoom(context, list);
 
+        boolean synced = false;
         if (isNetworkAvailable(context)) {
             try {
                 FirebaseHelper.getInstance().syncMessageToRealtimeDb(conversationId, msg);
+                synced = true;
             } catch (Exception e) {
                 saveOfflineMessage(context, msg);
+                synced = false;
+                td.teladoum.baobab.workers.BaobabSyncScheduler.triggerImmediateSync(context);
             }
         } else {
             saveOfflineMessage(context, msg);
+            synced = false;
+            td.teladoum.baobab.workers.BaobabSyncScheduler.triggerImmediateSync(context);
         }
+
+        saveMessagesToRoom(context, list, synced);
 
         return true;
     }
@@ -427,6 +448,10 @@ public class MessageRepository {
     }
 
     public static void saveMessagesToRoom(Context context, List<Message> messages) {
+        saveMessagesToRoom(context, messages, true);
+    }
+
+    public static void saveMessagesToRoom(Context context, List<Message> messages, boolean isSynced) {
         if (context == null || messages == null) return;
         new Thread(() -> {
             try {
@@ -434,7 +459,7 @@ public class MessageRepository {
                 if (db != null) {
                     List<MessageEntity> entities = new ArrayList<>();
                     for (Message m : messages) {
-                        MessageEntity entity = MessageEntity.fromModel(m);
+                        MessageEntity entity = MessageEntity.fromModel(m, isSynced);
                         if (entity != null) entities.add(entity);
                     }
                     db.messageDao().insertMessages(entities);

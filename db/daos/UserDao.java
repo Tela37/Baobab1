@@ -29,4 +29,10 @@ public interface UserDao {
 
     @Query("DELETE FROM users")
     void deleteAll();
+
+    @Query("SELECT * FROM users WHERE isSynced = 0")
+    List<UserEntity> getUnsyncedUsers();
+
+    @Query("UPDATE users SET isSynced = 1 WHERE id = :userId")
+    void markUserSynced(int userId);
 }

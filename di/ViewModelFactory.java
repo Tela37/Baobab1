@@ -10,7 +10,6 @@ import td.teladoum.baobab.viewmodels.AcceuilViewModel;
 import td.teladoum.baobab.viewmodels.AdminViewModel;
 import td.teladoum.baobab.viewmodels.ChatViewModel;
 import td.teladoum.baobab.viewmodels.LoginViewModel;
-import td.teladoum.baobab.viewmodels.MarketplaceViewModel;
 import td.teladoum.baobab.viewmodels.NotificationViewModel;
 import td.teladoum.baobab.viewmodels.ProfileViewModel;
 import td.teladoum.baobab.viewmodels.RegisterViewModel;
@@ -38,8 +37,6 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
             return (T) new RegisterViewModel(application);
         } else if (modelClass.isAssignableFrom(ProfileViewModel.class)) {
             return (T) new ProfileViewModel(application);
-        } else if (modelClass.isAssignableFrom(MarketplaceViewModel.class)) {
-            return (T) new MarketplaceViewModel(application);
         } else if (modelClass.isAssignableFrom(NotificationViewModel.class)) {
             return (T) new NotificationViewModel(application);
         } else if (modelClass.isAssignableFrom(AdminViewModel.class)) {

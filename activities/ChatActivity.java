@@ -198,10 +198,95 @@ public class ChatActivity extends AppCompatActivity {
         imagePickerLauncher.launch(new CropImageContractOptions(null, options));
     }
 
+    private final ActivityResultLauncher<String> pdfPickerLauncher =
+            registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.GetContent(), pdfUri -> {
+                if (pdfUri != null) {
+                    sendPdfMessage(pdfUri);
+                }
+            });
+
+    private void sendPdfMessage(Uri pdfUri) {
+        try {
+            String fileName = "document.pdf";
+            android.database.Cursor cursor = getContentResolver().query(pdfUri, null, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                int nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+                if (nameIndex != -1) {
+                    fileName = cursor.getString(nameIndex);
+                }
+                cursor.close();
+            }
+
+            java.io.File dir = new java.io.File(getFilesDir(), "pdf_files");
+            if (!dir.exists()) dir.mkdirs();
+            java.io.File destFile = new java.io.File(dir, "pdf_" + System.currentTimeMillis() + "_" + fileName);
+
+            try (java.io.InputStream in = getContentResolver().openInputStream(pdfUri);
+                 java.io.OutputStream out = new java.io.FileOutputStream(destFile)) {
+                byte[] buffer = new byte[1024];
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                }
+            }
+
+            String pdfPath = destFile.getAbsolutePath();
+            Integer replyId = replyingToMessage != null ? replyingToMessage.getId() : null;
+            String replyText = replyingToMessage != null ? getFormattedReplyText(replyingToMessage) : null;
+            String messageText = "[📄 Fichier PDF] " + fileName + "\n" + pdfPath;
+
+            boolean sent = messageRepository.sendMessage(conversationId, sessionManager.getUserId(), messageText, null, replyId, replyText);
+            if (sent) {
+                cancelQuoteReply();
+                loadMessages();
+                Toasty.success(this, "Fichier PDF envoyé", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toasty.error(this, "Erreur envoi PDF", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @android.annotation.SuppressLint("MissingPermission")
+    private void shareGpsLocation() {
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 104);
+            return;
+        }
+
+        android.location.LocationManager locationManager = (android.location.LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager != null) {
+            android.location.Location location = locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER);
+            if (location == null) {
+                location = locationManager.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER);
+            }
+
+            if (location != null) {
+                double lat = location.getLatitude();
+                double lng = location.getLongitude();
+                String mapsUrl = "https://maps.google.com/?q=" + lat + "," + lng;
+                String messageText = "[📍 Ma position GPS]\n" + mapsUrl;
+
+                Integer replyId = replyingToMessage != null ? replyingToMessage.getId() : null;
+                String replyText = replyingToMessage != null ? getFormattedReplyText(replyingToMessage) : null;
+
+                boolean sent = messageRepository.sendMessage(conversationId, sessionManager.getUserId(), messageText, null, replyId, replyText);
+                if (sent) {
+                    cancelQuoteReply();
+                    loadMessages();
+                    Toasty.success(this, "Position GPS partagée 📍", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toasty.warning(this, "Position GPS introuvable. Activez le GPS.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     private void showMediaSelectionOptions() {
-        String[] options = {"Une photo", "Plusieurs photos", "Une vidéo"};
+        String[] options = {"Une photo", "Plusieurs photos", "Une vidéo", "Un fichier PDF 📄", "Position GPS 📍"};
         new AlertDialog.Builder(this)
-                .setTitle("Envoyer")
+                .setTitle("Partager / Envoyer")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
                         launchImageCropper();
@@ -213,6 +298,10 @@ public class ChatActivity extends AppCompatActivity {
                         multipleImagePickerLauncher.launch(Intent.createChooser(intent, "Sélectionner des photos"));
                     } else if (which == 2) {
                         videoPickerLauncher.launch("video/*");
+                    } else if (which == 3) {
+                        pdfPickerLauncher.launch("application/pdf");
+                    } else if (which == 4) {
+                        shareGpsLocation();
                     }
                 })
                 .show();
@@ -1095,6 +1184,9 @@ public class ChatActivity extends AppCompatActivity {
         super.onResume();
         loadUserPresence();
         if (conversationId != -1) {
+            if (messageRepository != null && sessionManager != null) {
+                messageRepository.markMessagesAsRead(conversationId, sessionManager.getUserId());
+            }
             firestoreListener = FirebaseHelper.getInstance().listenToMessages(conversationId, (snapshot, error) -> {
                 if (snapshot != null && !snapshot.isEmpty()) {
                     loadMessages();

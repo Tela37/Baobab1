@@ -164,9 +164,36 @@ public class LoginActivity extends AppCompatActivity {
                 Toasty.error(this, msg, Toasty.LENGTH_SHORT).show();
             }
         });
+        loginViewModel.getLoginSuccessLiveData().observe(this, user -> {
+            if (user != null) {
+                checkSuspiciousLogin();
+                checkEmailVerificationOnLogin();
+                Toasty.success(this, "Bienvenue " + user.getName(), Toasty.LENGTH_SHORT).show();
+                startActivity(new Intent(LoginActivity.this, AcceuilActivity.class));
+                finish();
+            }
+        });
 
         userRepository = new UserRepository(this);
         sessionManager = new SessionManager(this);
+
+        Button btnBiometricLogin = findViewById(R.id.btnBiometricLogin);
+        if (btnBiometricLogin != null) {
+            SharedPreferences sessionPrefs = getSharedPreferences("BaobabSession", MODE_PRIVATE);
+            boolean biometricEnabled = sessionPrefs.getBoolean("biometric_login_enabled", false);
+            if (biometricEnabled && td.teladoum.baobab.helpers.BiometricHelper.canAuthenticate(this)) {
+                btnBiometricLogin.setVisibility(View.VISIBLE);
+                btnBiometricLogin.setOnClickListener(v -> {
+                    td.teladoum.baobab.helpers.BiometricHelper.showBiometricPrompt(this, () -> {
+                        performBiometricLogin();
+                    }, () -> {
+                        Toasty.info(this, "Connexion par empreinte annulée", Toasty.LENGTH_SHORT).show();
+                    });
+                });
+            } else {
+                btnBiometricLogin.setVisibility(View.GONE);
+            }
+        }
 
         checkAndAutoLogin();
 
@@ -188,7 +215,6 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         btnLogin.setOnClickListener(v -> {
-
             String identifier = etEmail.getText().toString().trim();
             String password = etPassword.getText().toString().trim();
 
@@ -202,87 +228,7 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
-            btnLogin.setEnabled(false);
-
-            String hashedPassword = PasswordUtils.hashPassword(password);
-            User user = userRepository.getUser(identifier, hashedPassword);
-            String targetEmail = user != null && user.getEmail() != null ? user.getEmail() : identifier;
-
-            if (user != null) {
-                // Synchronisation de la session Firebase Auth avec vérification
-                FirebaseHelper.getInstance().loginUser(targetEmail, password, task -> {
-                    if (!task.isSuccessful() && task.getException() != null) {
-                        android.util.Log.w("LoginActivity", "Firebase Auth sync note: " + task.getException().getMessage());
-                    }
-                });
-
-                NotificationRepository notificationRepo = new NotificationRepository(this);
-                notificationRepo.clearNotificationsForOtherUsers(user.getId());
-
-                sessionManager.createSession(
-                        user.getId(),
-                        user.getName(),
-                        user.getEmail(),
-                        user.getProfileImage()
-                );
-
-                Toasty.success(this, "Bienvenue " + user.getName(), Toasty.LENGTH_SHORT).show();
-
-                startActivity(new Intent(LoginActivity.this, AcceuilActivity.class));
-                finish();
-
-            } else {
-                FirebaseHelper.getInstance().loginUser(targetEmail, password, authTask -> {
-                    if (authTask.isSuccessful()) {
-                        userRepository.fetchAndSyncUserFromFirestore(targetEmail, password, () -> {
-                            User syncedUser = userRepository.getUser(targetEmail, PasswordUtils.hashPassword(password));
-                            if (syncedUser == null) {
-                                syncedUser = userRepository.getUserByIdentifier(targetEmail);
-                                if (syncedUser != null && (syncedUser.getPassword() == null || syncedUser.getPassword().trim().isEmpty())) {
-                                    syncedUser.setPassword(PasswordUtils.hashPassword(password));
-                                    FirebaseHelper.getInstance().syncUserToRealtimeDb(syncedUser);
-                                    FirebaseHelper.getInstance().syncUserProfileToFirestore(syncedUser);
-                                }
-                            }
-
-                            if (syncedUser != null) {
-                                if (progressBar != null) progressBar.setVisibility(View.GONE);
-                                btnLogin.setEnabled(true);
-
-                                NotificationRepository notificationRepo = new NotificationRepository(this);
-                                notificationRepo.clearNotificationsForOtherUsers(syncedUser.getId());
-
-                                sessionManager.createSession(
-                                        syncedUser.getId(),
-                                        syncedUser.getName(),
-                                        syncedUser.getEmail(),
-                                        syncedUser.getProfileImage()
-                                );
-
-                                Toasty.success(this, "Bienvenue " + syncedUser.getName(), Toasty.LENGTH_SHORT).show();
-                                startActivity(new Intent(LoginActivity.this, AcceuilActivity.class));
-                                finish();
-                            } else {
-                                if (progressBar != null) progressBar.setVisibility(View.GONE);
-                                btnLogin.setEnabled(true);
-                                Toasty.error(this, "Erreur de synchronisation du profil", Toast.LENGTH_SHORT).show();
-                            }
-                        }, () -> {
-                            if (progressBar != null) progressBar.setVisibility(View.GONE);
-                            btnLogin.setEnabled(true);
-                            Toasty.error(this, "Email ou mot de passe incorrect", Toast.LENGTH_SHORT).show();
-                        });
-                    } else {
-                        if (progressBar != null) progressBar.setVisibility(View.GONE);
-                        btnLogin.setEnabled(true);
-                        String errMsg = (authTask.getException() != null && authTask.getException().getMessage() != null) 
-                                ? authTask.getException().getMessage() 
-                                : "Email ou mot de passe incorrect";
-                        Toasty.error(this, errMsg, Toasty.LENGTH_LONG).show();
-                    }
-                });
-            }
+            loginViewModel.login(identifier, password);
         });
 
         tvRegister.setOnClickListener(v -> {
@@ -586,11 +532,63 @@ public class LoginActivity extends AppCompatActivity {
                     user.getProfileImage()
             );
 
+            checkSuspiciousLogin();
+            checkEmailVerificationOnLogin();
+
             Toasty.success(this, "Bienvenue " + user.getName(), Toast.LENGTH_SHORT).show();
             startActivity(new Intent(LoginActivity.this, AcceuilActivity.class));
             finish();
         } else {
             Toasty.warning(this, "Erreur lors de la connexion sociale", Toasty.LENGTH_SHORT).show();
+        }
+    }
+
+    private void checkSuspiciousLogin() {
+        String currentDevice = android.os.Build.MODEL + "_" + android.os.Build.DEVICE;
+        SharedPreferences prefsDevice = getSharedPreferences("SecurityPrefs", MODE_PRIVATE);
+        String lastDevice = prefsDevice.getString("last_device_id", "");
+        if (!lastDevice.isEmpty() && !lastDevice.equals(currentDevice)) {
+            Toasty.error(this, "🚨 Alerte de sécurité : Connexion suspecte depuis un nouvel appareil (" + android.os.Build.MODEL + ")", Toasty.LENGTH_LONG).show();
+            try {
+                int uid = sessionManager.getUserId();
+                if (uid != -1) {
+                    new NotificationRepository(this).addNotification(uid, uid, "SECURITY", 0, "⚠️ Connexion suspecte détectée depuis l'appareil " + android.os.Build.MODEL);
+                }
+            } catch (Exception ignored) {}
+        }
+        prefsDevice.edit().putString("last_device_id", currentDevice).apply();
+    }
+
+    private void checkEmailVerificationOnLogin() {
+        com.google.firebase.auth.FirebaseUser fbUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (fbUser != null && !fbUser.isEmailVerified() && fbUser.getEmail() != null && !fbUser.getEmail().startsWith("phone_") && !fbUser.getEmail().startsWith("fb_")) {
+            fbUser.sendEmailVerification();
+            Toasty.warning(this, "⚠️ Votre email n'est pas vérifié. Un e-mail de vérification a été envoyé.", Toasty.LENGTH_LONG).show();
+        }
+    }
+
+    private void performBiometricLogin() {
+        int lastUserId = sessionManager.getUserId();
+        User user = null;
+        if (lastUserId != -1) {
+            user = userRepository.getUserById(lastUserId);
+        }
+        if (user == null) {
+            java.util.List<User> users = userRepository.getAllUsers();
+            if (users != null && !users.isEmpty()) {
+                user = users.get(0);
+            }
+        }
+        if (user != null) {
+            sessionManager.createSession(user.getId(), user.getName(), user.getEmail(), user.getProfileImage());
+            checkSuspiciousLogin();
+            Toasty.success(this, "Connexion biométrique réussie ! Bienvenue " + user.getName(), Toasty.LENGTH_SHORT).show();
+            Intent intent = new Intent(LoginActivity.this, AcceuilActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        } else {
+            Toasty.error(this, "Aucun compte enregistré pour la connexion biométrique. Veuillez vous connecter avec votre mot de passe.", Toasty.LENGTH_LONG).show();
         }
     }
 

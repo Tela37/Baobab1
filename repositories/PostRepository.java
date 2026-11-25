@@ -88,23 +88,30 @@ public class PostRepository {
         post.setTargetUserId(targetUserId);
 
         postsCache.put(id, post);
-        saveCachedFeedPosts(context, new ArrayList<>(postsCache.values()));
 
+        boolean synced = false;
         if (isNetworkAvailable(context)) {
             try {
                 FirebaseHelper.getInstance().syncPostToRealtimeDb(post);
+                synced = true;
             } catch (Exception e) {
                 saveOfflinePost(context, post);
+                synced = false;
+                td.teladoum.baobab.workers.BaobabSyncScheduler.triggerImmediateSync(context);
                 if (context != null) {
                     es.dmoral.toasty.Toasty.info(context, context.getString(R.string.toast_post_saved_offline), es.dmoral.toasty.Toasty.LENGTH_LONG).show();
                 }
             }
         } else {
             saveOfflinePost(context, post);
+            synced = false;
+            td.teladoum.baobab.workers.BaobabSyncScheduler.triggerImmediateSync(context);
             if (context != null) {
                 es.dmoral.toasty.Toasty.info(context, context.getString(R.string.toast_post_saved_offline), es.dmoral.toasty.Toasty.LENGTH_LONG).show();
             }
         }
+
+        saveCachedFeedPosts(context, new ArrayList<>(postsCache.values()), synced);
 
         if (targetUserId > 0 && targetUserId != userId) {
             notificationRepository.addNotification(
@@ -188,6 +195,10 @@ public class PostRepository {
     }
 
     public static void saveCachedFeedPosts(Context context, List<Post> posts) {
+        saveCachedFeedPosts(context, posts, true);
+    }
+
+    public static void saveCachedFeedPosts(Context context, List<Post> posts, boolean isSynced) {
         if (context == null || posts == null) return;
         new Thread(() -> {
             try {
@@ -195,7 +206,7 @@ public class PostRepository {
                 if (db != null) {
                     List<PostEntity> entities = new ArrayList<>();
                     for (Post p : posts) {
-                        PostEntity entity = PostEntity.fromModel(p);
+                        PostEntity entity = PostEntity.fromModel(p, isSynced);
                         if (entity != null) entities.add(entity);
                     }
                     db.postDao().insertPosts(entities);

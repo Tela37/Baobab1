@@ -23,10 +23,15 @@ public class MessageEntity {
     public String reaction;
     public Integer replyToMessageId;
     public String replyToText;
+    public boolean isSynced = true;
 
     public MessageEntity() {}
 
     public static MessageEntity fromModel(Message m) {
+        return fromModel(m, true);
+    }
+
+    public static MessageEntity fromModel(Message m, boolean isSynced) {
         if (m == null) return null;
         MessageEntity entity = new MessageEntity();
         entity.id = m.getId();
@@ -43,6 +48,7 @@ public class MessageEntity {
         entity.reaction = m.getReaction();
         entity.replyToMessageId = m.getReplyToMessageId();
         entity.replyToText = m.getReplyToText();
+        entity.isSynced = isSynced;
         return entity;
     }
 

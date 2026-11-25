@@ -26,10 +26,15 @@ public class PostEntity {
     public boolean isPinned;
     public boolean isSensitive;
     public String createdAt;
+    public boolean isSynced = true;
 
     public PostEntity() {}
 
     public static PostEntity fromModel(Post post) {
+        return fromModel(post, true);
+    }
+
+    public static PostEntity fromModel(Post post, boolean isSynced) {
         if (post == null) return null;
         PostEntity entity = new PostEntity();
         entity.id = post.getId();
@@ -49,6 +54,7 @@ public class PostEntity {
         entity.isPinned = post.isPinned();
         entity.isSensitive = post.isSensitive();
         entity.createdAt = post.getCreatedAt();
+        entity.isSynced = isSynced;
         return entity;
     }
 

@@ -359,7 +359,40 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         if (message.getMessage() != null && !message.getMessage().trim().isEmpty()) {
             txtMessage.setVisibility(View.VISIBLE);
-            txtMessage.setText(message.getMessage());
+            String msgText = message.getMessage();
+            txtMessage.setText(msgText);
+
+            if (msgText.contains("https://maps.google.com/?q=")) {
+                txtMessage.setTextColor(Color.parseColor("#2196F3"));
+                txtMessage.setOnClickListener(v -> {
+                    try {
+                        String url = msgText.substring(msgText.indexOf("https://"));
+                        android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url));
+                        v.getContext().startActivity(intent);
+                    } catch (Exception ignored) {}
+                });
+            } else if (msgText.contains("[📄 Fichier PDF]")) {
+                txtMessage.setTextColor(Color.parseColor("#2196F3"));
+                txtMessage.setOnClickListener(v -> {
+                    try {
+                        String path = msgText.substring(msgText.lastIndexOf("\n") + 1);
+                        java.io.File file = new java.io.File(path);
+                        if (file.exists()) {
+                            android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(v.getContext(), v.getContext().getPackageName() + ".fileprovider", file);
+                            android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+                            intent.setDataAndType(uri, "application/pdf");
+                            intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            v.getContext().startActivity(intent);
+                        } else {
+                            es.dmoral.toasty.Toasty.error(v.getContext(), "Fichier PDF introuvable", es.dmoral.toasty.Toasty.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        es.dmoral.toasty.Toasty.error(v.getContext(), "Impossible d'ouvrir le PDF", es.dmoral.toasty.Toasty.LENGTH_SHORT).show();
+                    }
+                });
+            } else {
+                txtMessage.setTextColor(Color.WHITE);
+            }
         } else {
             txtMessage.setVisibility(View.GONE);
         }

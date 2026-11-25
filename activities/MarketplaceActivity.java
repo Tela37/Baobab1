@@ -27,11 +27,13 @@ import td.teladoum.baobab.R;
 import td.teladoum.baobab.adapters.MarketplaceAdapter;
 import td.teladoum.baobab.models.MarketplaceItem;
 import td.teladoum.baobab.repositories.MarketplaceRepository;
+import dagger.hilt.android.AndroidEntryPoint;
 
 /**
  * Hub principal de la Marketplace (Acheter, Vendre, Services, Location, Emploi).
  * Permet de filtrer par catégorie, chercher par mot-clé et publier une annonce.
  */
+@AndroidEntryPoint
 public class MarketplaceActivity extends AppCompatActivity {
 
     private td.teladoum.baobab.viewmodels.MarketplaceViewModel viewModel;
@@ -199,9 +201,10 @@ public class MarketplaceActivity extends AppCompatActivity {
     private void setupTabs(TabLayout tabLayout) {
         if (tabLayout == null) return;
         tabLayout.addTab(tabLayout.newTab().setText("Tout"));
+        tabLayout.addTab(tabLayout.newTab().setText("Vente"));
         tabLayout.addTab(tabLayout.newTab().setText("Acheter"));
         tabLayout.addTab(tabLayout.newTab().setText("Services"));
-        tabLayout.addTab(tabLayout.newTab().setText("Location"));
+        tabLayout.addTab(tabLayout.newTab().setText("Immobilier"));
         tabLayout.addTab(tabLayout.newTab().setText("Emploi"));
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -209,10 +212,11 @@ public class MarketplaceActivity extends AppCompatActivity {
             public void onTabSelected(TabLayout.Tab tab) {
                 int position = tab.getPosition();
                 switch (position) {
-                    case 1: currentCategory = "ACHAT"; break;
-                    case 2: currentCategory = "SERVICES"; break;
-                    case 3: currentCategory = "LOCATION"; break;
-                    case 4: currentCategory = "EMPLOI"; break;
+                    case 1: currentCategory = "VENTE"; break;
+                    case 2: currentCategory = "ACHAT"; break;
+                    case 3: currentCategory = "SERVICES"; break;
+                    case 4: currentCategory = "IMMOBILIER"; break;
+                    case 5: currentCategory = "EMPLOI"; break;
                     default: currentCategory = "TOUT"; break;
                 }
                 loadLocalItems();

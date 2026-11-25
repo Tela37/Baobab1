@@ -144,8 +144,14 @@ public class User2ProfileActivity extends AppCompatActivity {
         User user = userRepository.getUserById(targetUserId);
 
         String name = user != null && user.getName() != null ? user.getName() : targetUserName;
-        if (user != null && user.isVerified()) {
-            name = name + " 🔵";
+        if (user != null) {
+            String badgeDisplay = td.teladoum.baobab.utils.BadgeManager.getBadgeDisplay(user.getBadge());
+            if (badgeDisplay != null && !badgeDisplay.isEmpty()) {
+                name = name + " (" + badgeDisplay + ")";
+            }
+            if (user.isVerified()) {
+                name = name + " 🔵";
+            }
         }
         String img = user != null && user.getProfileImage() != null ? user.getProfileImage() : targetUserProfileImage;
         String coverImg = user != null && user.getCoverImage() != null ? user.getCoverImage() : null;

@@ -26,4 +26,10 @@ public interface MessageDao {
 
     @Query("DELETE FROM messages WHERE conversationId = :conversationId")
     void deleteMessagesByConversationId(int conversationId);
+
+    @Query("SELECT * FROM messages WHERE isSynced = 0")
+    List<MessageEntity> getUnsyncedMessages();
+
+    @Query("UPDATE messages SET isSynced = 1 WHERE id = :messageId")
+    void markMessageSynced(int messageId);
 }

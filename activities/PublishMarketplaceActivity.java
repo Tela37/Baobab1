@@ -22,6 +22,9 @@ import com.canhub.cropper.CropImageContractOptions;
 import com.canhub.cropper.CropImageOptions;
 import com.canhub.cropper.CropImageView;
 
+import javax.inject.Inject;
+import dagger.hilt.android.AndroidEntryPoint;
+
 import es.dmoral.toasty.Toasty;
 import td.teladoum.baobab.R;
 import td.teladoum.baobab.helpers.GeminiHelper;
@@ -32,15 +35,19 @@ import td.teladoum.baobab.utils.ImageUtils;
 import td.teladoum.baobab.utils.SessionManager;
 
 /**
- * Activité pour publier une nouvelle annonce sur la Marketplace.
- * Permet de saisir le titre, le prix en FCFA, la catégorie (Acheter, Services, Location, Emploi),
- * la ville au Tchad, le contact téléphonique/WhatsApp et d'attacher une photo.
+ * Activité pour publier une nouvelle annonce sur la Marketplace avec Hilt DI.
  */
+@AndroidEntryPoint
 public class PublishMarketplaceActivity extends AppCompatActivity {
 
-    private MarketplaceRepository repository;
-    private SessionManager sessionManager;
-    private UserRepository userRepository;
+    @Inject
+    MarketplaceRepository repository;
+
+    @Inject
+    SessionManager sessionManager;
+
+    @Inject
+    UserRepository userRepository;
 
     private ImageView imgPublishPhoto;
     private View layoutPhotoPlaceholder;
@@ -92,10 +99,6 @@ public class PublishMarketplaceActivity extends AppCompatActivity {
             controller.setAppearanceLightStatusBars(true);
             controller.setAppearanceLightNavigationBars(true);
         }
-
-        repository = new MarketplaceRepository(this);
-        sessionManager = new SessionManager(this);
-        userRepository = new UserRepository(this);
 
         Toolbar toolbar = findViewById(R.id.toolbarPublishMarketplace);
         setSupportActionBar(toolbar);
@@ -171,7 +174,13 @@ public class PublishMarketplaceActivity extends AppCompatActivity {
     }
 
     private void setupCategorySpinner() {
-        String[] categories = new String[]{"ACHAT (Biens / Électronique)", "SERVICES (Prestations)", "LOCATION (Maisons / Autos)", "EMPLOI (Offres & Recrutement)"};
+        String[] categories = new String[]{
+            "VENTE (Articles & Biens)",
+            "ACHAT (Recherche / Besoins)",
+            "SERVICES (Prestations & Freelance)",
+            "IMMOBILIER (Maisons, Terrains, Appartements)",
+            "EMPLOI (Offres d'emploi & Recrutement)"
+        };
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, categories);
         spinnerCategory.setAdapter(adapter);
     }
@@ -206,10 +215,11 @@ public class PublishMarketplaceActivity extends AppCompatActivity {
         }
 
         int catPos = spinnerCategory.getSelectedItemPosition();
-        String category = "ACHAT";
-        if (catPos == 1) category = "SERVICES";
-        else if (catPos == 2) category = "LOCATION";
-        else if (catPos == 3) category = "EMPLOI";
+        String category = "VENTE";
+        if (catPos == 1) category = "ACHAT";
+        else if (catPos == 2) category = "SERVICES";
+        else if (catPos == 3) category = "IMMOBILIER";
+        else if (catPos == 4) category = "EMPLOI";
 
         String city = (String) spinnerCity.getSelectedItem();
 

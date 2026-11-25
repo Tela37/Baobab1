@@ -53,6 +53,8 @@ public class ParametreActivity extends AppCompatActivity {
     private Button btnPrivacyPolicyParam;
     private Button btnDeleteAccountParam;
     private Button btnAdminPanel;
+    private Button btnVerifyEmailParam, btnBlockedUsersParam;
+    private SwitchMaterial switchBiometricLogin;
 
     private SharedPreferences prefs;
     private UserRepository userRepository;
@@ -113,6 +115,9 @@ public class ParametreActivity extends AppCompatActivity {
         btnPrivacyPolicyParam = findViewById(R.id.btnPrivacyPolicyParam);
         btnDeleteAccountParam = findViewById(R.id.btnDeleteAccountParam);
         btnAdminPanel = findViewById(R.id.btnAdminPanel);
+        btnVerifyEmailParam = findViewById(R.id.btnVerifyEmailParam);
+        btnBlockedUsersParam = findViewById(R.id.btnBlockedUsersParam);
+        switchBiometricLogin = findViewById(R.id.switchBiometricLogin);
     }
 
     private void loadSettings() {
@@ -130,6 +135,21 @@ public class ParametreActivity extends AppCompatActivity {
         switchNotifications.setChecked(notifications);
         switchDarkMode.setChecked(darkMode);
         if (switchAds != null) switchAds.setChecked(sessionManager.isAdsEnabled());
+
+        SharedPreferences sessionPrefs = getSharedPreferences("BaobabSession", MODE_PRIVATE);
+        if (switchBiometricLogin != null) {
+            switchBiometricLogin.setOnCheckedChangeListener(null);
+            switchBiometricLogin.setChecked(sessionPrefs.getBoolean("biometric_login_enabled", false));
+            switchBiometricLogin.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked && !td.teladoum.baobab.helpers.BiometricHelper.canAuthenticate(this)) {
+                    Toasty.warning(this, "L'authentification biométrique n'est pas configurée sur cet appareil", Toasty.LENGTH_LONG).show();
+                    switchBiometricLogin.setChecked(false);
+                    return;
+                }
+                sessionPrefs.edit().putBoolean("biometric_login_enabled", isChecked).apply();
+                Toasty.info(this, isChecked ? "Connexion biométrique activée 👆" : "Connexion biométrique désactivée", Toasty.LENGTH_SHORT).show();
+            });
+        }
 
         User currentUser = userRepository.getUserById(currentUserId);
         if (currentUser != null) {
@@ -196,6 +216,24 @@ public class ParametreActivity extends AppCompatActivity {
         }
 
         btnChangeEmailParam.setOnClickListener(v -> showChangeEmailDialog());
+        if (btnVerifyEmailParam != null) {
+            btnVerifyEmailParam.setOnClickListener(v -> {
+                com.google.firebase.auth.FirebaseUser fbUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+                if (fbUser != null) {
+                    if (fbUser.isEmailVerified()) {
+                        Toasty.success(this, "Votre e-mail (" + fbUser.getEmail() + ") est vérifié ✔️", Toasty.LENGTH_SHORT).show();
+                    } else {
+                        fbUser.sendEmailVerification();
+                        Toasty.info(this, "E-mail de vérification envoyé à " + fbUser.getEmail() + " ✉️", Toasty.LENGTH_LONG).show();
+                    }
+                } else {
+                    Toasty.warning(this, "Aucun utilisateur Firebase connecté", Toasty.LENGTH_SHORT).show();
+                }
+            });
+        }
+        if (btnBlockedUsersParam != null) {
+            btnBlockedUsersParam.setOnClickListener(v -> showBlockedUsersDialog());
+        }
         btnChangePasswordParam.setOnClickListener(v -> showChangePasswordDialog());
         Button btnRequestBlueBadge = findViewById(R.id.btnRequestBlueBadge);
         if (btnRequestBlueBadge != null) {
@@ -502,6 +540,58 @@ public class ParametreActivity extends AppCompatActivity {
         if (btnZh != null) {
             btnZh.setOnClickListener(v -> changeAppLanguage("zh"));
         }
+    }
+
+    private void showBlockedUsersDialog() {
+        java.util.List<Integer> blockedIds = userRepository.getBlockedUserIds(currentUserId);
+        if (blockedIds == null || blockedIds.isEmpty()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Utilisateurs bloqués 🚫")
+                    .setMessage("Vous n'avez bloqué aucun utilisateur.")
+                    .setPositiveButton("OK", null)
+                    .show();
+            return;
+        }
+
+        java.util.List<User> blockedUsers = new java.util.ArrayList<>();
+        for (int id : blockedIds) {
+            User u = userRepository.getUserById(id);
+            if (u != null) {
+                blockedUsers.add(u);
+            }
+        }
+
+        if (blockedUsers.isEmpty()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Utilisateurs bloqués 🚫")
+                    .setMessage("Aucun utilisateur bloqué trouvé.")
+                    .setPositiveButton("OK", null)
+                    .show();
+            return;
+        }
+
+        String[] names = new String[blockedUsers.size()];
+        for (int i = 0; i < blockedUsers.size(); i++) {
+            User u = blockedUsers.get(i);
+            names[i] = (u.getName() != null ? u.getName() : u.getEmail());
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Utilisateurs bloqués (" + blockedUsers.size() + ") 🚫")
+                .setItems(names, (dialog, which) -> {
+                    User target = blockedUsers.get(which);
+                    new AlertDialog.Builder(ParametreActivity.this)
+                            .setTitle("Débloquer " + target.getName() + " ?")
+                            .setMessage("Voulez-vous débloquer cet utilisateur ?")
+                            .setPositiveButton("Débloquer", (d, w) -> {
+                                userRepository.unblockUser(currentUserId, target.getId());
+                                Toasty.success(ParametreActivity.this, target.getName() + " a été débloqué(e)", Toasty.LENGTH_SHORT).show();
+                            })
+                            .setNegativeButton("Annuler", null)
+                            .show();
+                })
+                .setPositiveButton("Fermer", null)
+                .show();
     }
 
     private void changeAppLanguage(String langCode) {

@@ -44,6 +44,7 @@ public class Mise_a_jour_Activity extends AppCompatActivity {
     private EditText etUpdateLastName, etUpdateFirstName, etUpdateNeighborhood, etUpdateCity, etUpdateCountry, etUpdateProfession, etUpdateBio, etUpdateRelationshipStatus, etUpdateTelephone;
     private TextView etUpdateDob, tvUpdateEmail;
     private Spinner spinnerGender;
+    private Spinner spinnerBadge;
     private Button btnSaveProfileUpdate;
     private android.widget.ProgressBar progressBarMiseAJour;
 
@@ -132,6 +133,7 @@ public class Mise_a_jour_Activity extends AppCompatActivity {
         etUpdateCity = findViewById(R.id.etUpdateCity);
         etUpdateCountry = findViewById(R.id.etUpdateCountry);
         spinnerGender = findViewById(R.id.spinner);
+        spinnerBadge = findViewById(R.id.spinnerBadge);
         btnSaveProfileUpdate = findViewById(R.id.btnSaveProfileUpdate);
         progressBarMiseAJour = findViewById(R.id.progressBarMiseAJour);
 
@@ -142,6 +144,15 @@ public class Mise_a_jour_Activity extends AppCompatActivity {
         );
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerGender.setAdapter(adapter);
+
+        java.util.List<td.teladoum.baobab.utils.BadgeManager.BadgeInfo> badges = td.teladoum.baobab.utils.BadgeManager.getAllBadges();
+        ArrayAdapter<td.teladoum.baobab.utils.BadgeManager.BadgeInfo> badgeAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_item,
+                badges
+        );
+        badgeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerBadge.setAdapter(badgeAdapter);
 
         populateUserData();
 
@@ -173,6 +184,17 @@ public class Mise_a_jour_Activity extends AppCompatActivity {
             if (adapter != null) {
                 int position = adapter.getPosition(gender);
                 if (position >= 0) spinnerGender.setSelection(position);
+            }
+        }
+
+        String badgeKey = currentUser.getBadge();
+        if (badgeKey != null && spinnerBadge != null) {
+            java.util.List<td.teladoum.baobab.utils.BadgeManager.BadgeInfo> badges = td.teladoum.baobab.utils.BadgeManager.getAllBadges();
+            for (int i = 0; i < badges.size(); i++) {
+                if (badges.get(i).getKey().equals(badgeKey)) {
+                    spinnerBadge.setSelection(i);
+                    break;
+                }
             }
         }
     }
@@ -257,6 +279,10 @@ public class Mise_a_jour_Activity extends AppCompatActivity {
                 currentUserId, firstName, lastName, dob, neighborhood, city, country,
                 imagePath, profession, relationshipStatus, gender, telephone, bio
         );
+
+        td.teladoum.baobab.utils.BadgeManager.BadgeInfo selectedBadge = spinnerBadge != null && spinnerBadge.getSelectedItem() != null ? (td.teladoum.baobab.utils.BadgeManager.BadgeInfo) spinnerBadge.getSelectedItem() : null;
+        String badgeKey = selectedBadge != null ? selectedBadge.getKey() : td.teladoum.baobab.utils.BadgeManager.BADGE_NOUVEAU;
+        userRepository.updateUserBadge(currentUserId, badgeKey);
 
         if (updated) {
             String combinedName = (lastName + " " + firstName).trim();
