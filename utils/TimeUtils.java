@@ -35,6 +35,22 @@ public class TimeUtils {
         return sdf.format(new Date());
     }
 
+    public static long getHoursSince(String dateTimeStr) {
+        if (dateTimeStr == null || dateTimeStr.trim().isEmpty()) {
+            return 0;
+        }
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            Date date = sdf.parse(dateTimeStr);
+            if (date == null) return 0;
+
+            long diffMillis = System.currentTimeMillis() - date.getTime();
+            return Math.max(0, diffMillis / (3600 * 1000L));
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     public static String getRemainingTimeText(String dateTimeStr) {
         if (dateTimeStr == null || dateTimeStr.trim().isEmpty()) {
             return "";

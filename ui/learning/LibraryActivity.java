@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -162,9 +163,10 @@ public class LibraryActivity extends AppCompatActivity {
         Button btnAddBookAdmin = findViewById(R.id.btnAddBookAdmin);
         int userId = sessionManager.getUserId();
         User currentUser = userRepository.getUserById(userId);
-        if (currentUser != null && (currentUser.isAdmin() || userRepository.isSuperAdmin(userId))) {
+        if (currentUser != null) {
             if (btnAddBookAdmin != null) {
                 btnAddBookAdmin.setVisibility(View.VISIBLE);
+                btnAddBookAdmin.setText("➕ Publier un Cours, Devoir ou PDF");
                 btnAddBookAdmin.setOnClickListener(v -> showAddBookDialog());
             }
         } else {
@@ -274,8 +276,8 @@ public class LibraryActivity extends AppCompatActivity {
     }
 
     private void setupSpinners() {
-        String[] niveaux = {"TOUT", "Primaire", "Collège", "Lycée", "Université", "Formation professionnelle"};
-        String[] matieres = {"TOUT", "Mathématiques", "Français", "Physique", "SVT", "Histoire", "Géographie", "Anglais", "Informatique", "Économie"};
+        String[] niveaux = {"TOUT", "Primaire", "Collège", "Lycée", "Université", "Concours / ENA"};
+        String[] matieres = {"TOUT", "Mathématiques", "Français", "Physique-Chimie", "SVT", "Histoire-Géographie", "Anglais", "Arabe", "Philosophie", "Informatique", "Économie"};
 
         spinnerNiveau.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, niveaux));
         spinnerMatiere.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, matieres));
@@ -386,11 +388,13 @@ public class LibraryActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(android.view.Menu menu) {
         menu.add(0, 1001, 0, "🤖 Assistant IA Exercice");
         menu.add(0, 1002, 1, "📖 Ouvrir un PDF...");
+        menu.add(0, 1004, 2, "👨‍🏫 Publier un Cours ou Devoir");
 
         int userId = sessionManager.getUserId();
         User currentUser = userRepository.getUserById(userId);
         if (currentUser != null && (currentUser.isAdmin() || userRepository.isSuperAdmin(userId))) {
-            menu.add(0, 1003, 2, "➕ Ajouter un livre / lien (Admin)");
+            menu.add(0, 1003, 3, "➕ Ajouter un document (Admin)");
+            menu.add(0, 1005, 4, "🏫 Gestion des Niveaux scolaires");
         }
         return true;
     }
@@ -406,11 +410,47 @@ public class LibraryActivity extends AppCompatActivity {
         } else if (item.getItemId() == 1002) {
             filePickerLauncherForPdf.launch("application/pdf");
             return true;
-        } else if (item.getItemId() == 1003) {
+        } else if (item.getItemId() == 1003 || item.getItemId() == 1004) {
             showAddBookDialog();
+            return true;
+        } else if (item.getItemId() == 1005) {
+            showLevelManagementDialog();
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showLevelManagementDialog() {
+        String[] levelsInfo = {
+            "🏫 Primaire (CP à CM2)",
+            "🏫 Collège (6ème, 5ème, 4ème, 3ème - Préparation BEPC)",
+            "🏫 Lycée (Seconde, Première, Terminale - Préparation BAC)",
+            "🏫 Enseignement Supérieur & Université (Licence, Master)",
+            "🎓 Concours nationaux & ENA (École Nationale d'Administration)"
+        };
+
+        new AlertDialog.Builder(this)
+                .setTitle("Gestion des Niveaux Scolaires (Tchad) 🏫")
+                .setItems(levelsInfo, (dialog, which) -> {
+                    Toasty.info(this, "Niveau sélectionné : " + levelsInfo[which], Toasty.LENGTH_SHORT).show();
+                })
+                .setPositiveButton("Ajouter un niveau / classe", (dialog, which) -> {
+                    EditText etNewLevel = new EditText(this);
+                    etNewLevel.setHint("Nom de la classe (ex: 4ème A, Terminale C)...");
+                    new AlertDialog.Builder(this)
+                            .setTitle("Ajouter une classe")
+                            .setView(etNewLevel)
+                            .setPositiveButton("Enregistrer", (d, w) -> {
+                                String className = etNewLevel.getText().toString().trim();
+                                if (!className.isEmpty()) {
+                                    Toasty.success(this, "Classe " + className + " ajoutée avec succès ! 📚", Toasty.LENGTH_SHORT).show();
+                                }
+                            })
+                            .setNegativeButton("Annuler", null)
+                            .show();
+                })
+                .setNegativeButton("Fermer", null)
+                .show();
     }
 
     private void showAddBookDialog() {

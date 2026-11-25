@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 
 import com.google.firebase.database.FirebaseDatabase;
 
+import dagger.hilt.android.HiltAndroidApp;
 import td.teladoum.baobab.helpers.AnalyticsHelper;
 import td.teladoum.baobab.helpers.PresenceManager;
 import td.teladoum.baobab.repositories.UserRepository;
@@ -15,6 +16,7 @@ import td.teladoum.baobab.utils.SessionManager;
 /**
  * Classe Application globale pour initialiser les préférences (ex: Mode Sombre global).
  */
+@HiltAndroidApp
 public class BaobabApplication extends Application {
 
     @Override
@@ -22,6 +24,10 @@ public class BaobabApplication extends Application {
         super.onCreate();
         try {
             FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+        } catch (Exception ignored) {}
+
+        try {
+            td.teladoum.baobab.workers.BaobabSyncScheduler.scheduleSync(this);
         } catch (Exception ignored) {}
 
         try {

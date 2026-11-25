@@ -1,31 +1,32 @@
 package td.teladoum.baobab.viewmodels;
 
-import android.app.Application;
-
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
+import dagger.hilt.android.lifecycle.HiltViewModel;
 import td.teladoum.baobab.models.MarketplaceItem;
 import td.teladoum.baobab.repositories.MarketplaceRepository;
 
 /**
- * ViewModel pour le Marché / Marketplace (MarketplaceActivity) suivant l'architecture MVVM.
+ * ViewModel pour le Marché / Marketplace (MarketplaceActivity) suivant l'architecture MVVM avec Hilt DI.
  */
-public class MarketplaceViewModel extends AndroidViewModel {
+@HiltViewModel
+public class MarketplaceViewModel extends ViewModel {
 
     private final MarketplaceRepository marketplaceRepository;
 
     private final MutableLiveData<List<MarketplaceItem>> itemsLiveData = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<Boolean> isLoadingLiveData = new MutableLiveData<>(false);
 
-    public MarketplaceViewModel(@NonNull Application application) {
-        super(application);
-        this.marketplaceRepository = new MarketplaceRepository(application);
+    @Inject
+    public MarketplaceViewModel(MarketplaceRepository marketplaceRepository) {
+        this.marketplaceRepository = marketplaceRepository;
     }
 
     public LiveData<List<MarketplaceItem>> getItemsLiveData() {

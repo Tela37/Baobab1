@@ -44,15 +44,21 @@ public class LearningViewModel extends AndroidViewModel {
     }
 
     public void loadLivres(String niveau, String matiere) {
-        List<Livre> list;
-        if (niveau != null && !niveau.equalsIgnoreCase("TOUT")) {
-            list = learningRepository.getLivresByNiveau(niveau);
-        } else if (matiere != null && !matiere.equalsIgnoreCase("TOUT")) {
-            list = learningRepository.getLivresByMatiere(matiere);
-        } else {
-            list = learningRepository.getAllLivres();
+        loadLivres(niveau, matiere, "TOUT");
+    }
+
+    public void loadLivres(String niveau, String matiere, String type) {
+        List<Livre> list = learningRepository.getAllLivres();
+        List<Livre> filtered = new ArrayList<>();
+        for (Livre l : list) {
+            boolean matchNiveau = (niveau == null || niveau.equalsIgnoreCase("TOUT") || niveau.equalsIgnoreCase(l.getNiveau()));
+            boolean matchMatiere = (matiere == null || matiere.equalsIgnoreCase("TOUT") || matiere.equalsIgnoreCase(l.getMatiere()));
+            boolean matchType = (type == null || type.equalsIgnoreCase("TOUT") || type.equalsIgnoreCase(l.getType()));
+            if (matchNiveau && matchMatiere && matchType) {
+                filtered.add(l);
+            }
         }
-        livresLiveData.setValue(list != null ? list : new ArrayList<>());
+        livresLiveData.setValue(filtered);
     }
 
     public void loadFavorites() {
