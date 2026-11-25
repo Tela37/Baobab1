@@ -11,7 +11,13 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
+    <queries>
+        <package android:name="com.google.android.gms" />
+        <package android:name="com.facebook.katana" />
+    </queries>
+
     <application
+        android:name=".BaobabApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -52,11 +58,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="fb2521910528298341" />
+                <data android:scheme="fb1364686782246432" />
             </intent-filter>
         </activity>
         <activity
-            android:name=".activities.SplashActivity"
+            android:name=".activities.SplashScreenActivity"
             android:exported="true"
             android:theme="@style/Theme.BaobabTD">
             <intent-filter>
@@ -106,11 +112,15 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".activities.PageUtilisateurActivity"
+            android:name=".activities.User2PageActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".activities.MesPublicationActivity"
+            android:name=".activities.PagePersonnelleActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".activities.CallHistoryActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
@@ -134,11 +144,7 @@
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize" />
 
-        <activity
-            android:name=".activities.VideoActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden|layoutDirection"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+
 
         <activity
             android:name=".activities.NotificationActivity"
@@ -183,10 +189,72 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".activities.User2Activity"
+            android:name=".activities.User2ProfileActivity"
             android:exported="false"
             android:label="Profil Utilisateur"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activities.MarketplaceActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activities.PublishMarketplaceActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activities.MarketplaceDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activities.GeminiAssistantActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".activities.VideoPlayerActivity"
+            android:exported="false"
+            android:supportsPictureInPicture="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.learning.LearningMainActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.learning.LibraryActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.learning.PdfViewerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.learning.StudyQuestionDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.learning.ExamAnnalesActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.learning.QuizActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.learning.FavoritesActivity"
+            android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
