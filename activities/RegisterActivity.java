@@ -14,11 +14,31 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.GraphRequest;
+import com.facebook.login.LoginResult;
+import com.facebook.login.widget.LoginButton;
+
+import org.json.JSONObject;
+
+import java.util.Arrays;
+
 import es.dmoral.toasty.Toasty;
 import td.teladoum.baobab.R;
+import td.teladoum.baobab.models.User;
 import td.teladoum.baobab.firebase.FirebaseHelper;
+import td.teladoum.baobab.repositories.NotificationRepository;
 import td.teladoum.baobab.repositories.UserRepository;
 import td.teladoum.baobab.utils.PasswordUtils;
+import td.teladoum.baobab.utils.SessionManager;
 
 /**
  * Activité d'inscription (Register).
@@ -34,6 +54,10 @@ public class RegisterActivity extends AppCompatActivity {
     private Button btnRegister;
     private TextView tvLogin;
     private ProgressBar progressBar;
+
+    private LoginButton btnFacebookLogin;
+    private CallbackManager callbackManager;
+    private SessionManager sessionManager;
 
     private td.teladoum.baobab.viewmodels.RegisterViewModel registerViewModel;
     private UserRepository userRepository;
@@ -77,6 +101,10 @@ public class RegisterActivity extends AppCompatActivity {
         btnRegister = findViewById(R.id.btnRegister);
         tvLogin = findViewById(R.id.tvLogin);
         progressBar = findViewById(R.id.progressBar);
+
+        sessionManager = new SessionManager(this);
+        btnFacebookLogin = findViewById(R.id.btnFacebookLogin);
+        setupFacebookLogin();
 
         registerViewModel = new androidx.lifecycle.ViewModelProvider(this).get(td.teladoum.baobab.viewmodels.RegisterViewModel.class);
         registerViewModel.getIsLoadingLiveData().observe(this, isLoading -> {
@@ -215,6 +243,102 @@ public class RegisterActivity extends AppCompatActivity {
                 Toasty.error(RegisterActivity.this, errorMsg, Toasty.LENGTH_LONG).show();
             }
         });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (callbackManager != null) {
+            callbackManager.onActivityResult(requestCode, resultCode, data);
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void setupFacebookLogin() {
+        try {
+            if (btnFacebookLogin != null) {
+                btnFacebookLogin.setVisibility(View.VISIBLE);
+                callbackManager = CallbackManager.Factory.create();
+                btnFacebookLogin.setPermissions(Arrays.asList("email", "public_profile"));
+
+                btnFacebookLogin.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
+                    @Override
+                    public void onSuccess(LoginResult loginResult) {
+                        GraphRequest request = GraphRequest.newMeRequest(
+                                loginResult.getAccessToken(),
+                                (object, response) -> {
+                                    try {
+                                        String email = null;
+                                        String name = "Utilisateur Facebook";
+                                        String photoUrl = null;
+
+                                        if (object != null) {
+                                            if (object.has("email")) {
+                                                email = object.getString("email");
+                                            }
+                                            if (object.has("name")) {
+                                                name = object.getString("name");
+                                            }
+                                            if (object.has("picture")) {
+                                                JSONObject pictureData = object.getJSONObject("picture").optJSONObject("data");
+                                                if (pictureData != null && pictureData.has("url")) {
+                                                    photoUrl = pictureData.getString("url");
+                                                }
+                                            }
+                                        }
+
+                                        if (email == null || email.isEmpty()) {
+                                            email = "fb_" + loginResult.getAccessToken().getUserId() + "@facebook.com";
+                                        }
+
+                                        onSocialLoginSuccess(email, name, photoUrl);
+
+                                    } catch (Exception e) {
+                                        android.widget.Toast.makeText(RegisterActivity.this, "Erreur de traitement profil Facebook", android.widget.Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                        );
+
+                        Bundle parameters = new Bundle();
+                        parameters.putString("fields", "id,name,email,picture.type(large)");
+                        request.setParameters(parameters);
+                        request.executeAsync();
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        Toasty.warning(RegisterActivity.this, "Connexion Facebook annulée", Toasty.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onError(FacebookException error) {
+                        Toasty.error(RegisterActivity.this, "Erreur Facebook: " + error.getMessage(), Toasty.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        } catch (Exception e) {
+            android.util.Log.e("RegisterActivity", "Facebook SDK setup error: " + e.getMessage());
+        }
+    }
+
+    private void onSocialLoginSuccess(String email, String name, String photoUrl) {
+        User user = userRepository.findOrCreateSocialUser(email, name, photoUrl);
+        if (user != null) {
+            NotificationRepository notificationRepo = new NotificationRepository(this);
+            notificationRepo.clearNotificationsForOtherUsers(user.getId());
+
+            sessionManager.createSession(
+                    user.getId(),
+                    user.getName(),
+                    user.getEmail(),
+                    user.getProfileImage()
+            );
+
+            Toasty.success(this, "Bienvenue " + user.getName(), android.widget.Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(RegisterActivity.this, AcceuilActivity.class));
+            finish();
+        } else {
+            Toasty.warning(this, "Erreur lors de la connexion sociale", Toasty.LENGTH_SHORT).show();
+        }
     }
 }
 
