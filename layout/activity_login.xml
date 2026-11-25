@@ -110,6 +110,17 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+        <Button
+            android:id="@+id/btnBiometricLogin"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="40dp"
+            android:layout_marginBottom="8dp"
+            android:text="Connexion biométrique 👆"
+            android:textColor="#2E7D32"
+            android:textStyle="bold" />
+
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="48dp"

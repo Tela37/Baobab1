@@ -165,6 +165,31 @@
                 android:textColorHint="@color/grey"
                 app:drawableStartCompat="@drawable/bao_custom_prof_input" />
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="5dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="10dp"
+                android:background="@drawable/bg_et"
+                android:orientation="vertical"
+                android:padding="7dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Badge de profil"
+                    android:textColor="@color/black"
+                    android:textStyle="bold"
+                    android:textSize="15sp" />
+
+                <Spinner
+                    android:id="@+id/spinnerBadge"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="5dp" />
+            </LinearLayout>
+
             <EditText
                 android:id="@+id/mAj_bio"
                 android:layout_width="match_parent"

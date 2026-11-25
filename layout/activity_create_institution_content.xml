@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/windowBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:title="Publier du contenu"
+            app:titleTextColor="@android:color/white" />
+
+        <Spinner
+            android:id="@+id/spinnerContentType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="12dp" />
+
+        <EditText
+            android:id="@+id/etTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="Titre (ex: Résultats Concours / Conférence)"
+            android:inputType="text"
+            android:autofillHints="title"
+            android:padding="12dp" />
+
+        <EditText
+            android:id="@+id/etDetailsOrContent"
+            android:layout_width="match_parent"
+            android:layout_height="140dp"
+            android:layout_marginTop="12dp"
+            android:gravity="top"
+            android:hint="Détails / Contenu..."
+            android:inputType="textMultiLine"
+            android:autofillHints="description"
+            android:padding="12dp" />
+
+        <EditText
+            android:id="@+id/etExtraField"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="Date, Lieu ou Lien URL (Optionnel)"
+            android:inputType="text"
+            android:autofillHints="url"
+            android:padding="12dp" />
+
+        <Button
+            android:id="@+id/btnSubmitContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Publier"
+            android:textColor="@android:color/white"
+            android:backgroundTint="?attr/colorPrimary"
+            android:padding="14dp" />
+
+    </LinearLayout>
+
+</ScrollView>

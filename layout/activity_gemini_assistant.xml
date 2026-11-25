@@ -122,10 +122,21 @@
                 android:padding="12dp" />
 
             <Button
+                android:id="@+id/btnRewardedAdBoost"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="#FF8F00"
+                android:text="🎬 Voir une vidéo pour booster l'IA (Récompensé)"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Button
                 android:id="@+id/btnGenerateAi"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="8dp"
                 android:backgroundTint="#2E7D32"
                 android:text="Générer avec l'IA Gemini ✨"
                 android:textColor="#FFFFFF"
